@@ -37,7 +37,7 @@ impl<T> Good<T> for T where
 
 pub type Vector3<T> = [T; 3];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Matrix3<T: Good<T>> {
     data: [T; 9],
 }
@@ -100,7 +100,7 @@ impl<T: Good<T>> Matrix3<T> {
     pub fn inverse(&self) -> Result<Matrix3<T>, &'static str> {
         let det = self.determinant();
         if det == 0i8.into() {
-            return Err("Matrix is not inversible. Determinant is 0.");
+            return Err("Matrix is not invertible. Determinant is 0.");
         }
         let mut r = Matrix3::<T>::new();
         for i in 0..3 {
@@ -111,7 +111,6 @@ impl<T: Good<T>> Matrix3<T> {
                     .filter(|&(idx, _)| idx / 3 != i && idx % 3 != j)
                     .map(|(_, item)| *item)
                     .collect();
-                println!("m2by2 for {}:{}   {:?}", i, j, m2by2);
                 let unit: T = 1i8.into();
                 let mut result: T = unit / det * ((m2by2[0] * m2by2[3]) - (m2by2[1] * m2by2[2]));
                 if (i + j) % 2 != 0 {
@@ -360,7 +359,7 @@ mod tests {
         let a = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
         assert_eq!(
             a.inverse().unwrap_err(),
-            "Matrix is not inversible. Determinant is 0."
+            "Matrix is not invertible. Determinant is 0."
         );
     }
 
@@ -371,7 +370,7 @@ mod tests {
             .unwrap();
         assert_eq!(
             a.inverse().unwrap_err(),
-            "Matrix is not inversible. Determinant is 0."
+            "Matrix is not invertible. Determinant is 0."
         );
     }
 
