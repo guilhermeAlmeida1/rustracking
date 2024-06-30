@@ -1,7 +1,6 @@
 use std::{default::Default, ops};
 
-#[derive(Default, Debug)]
-pub struct Vector3<T: Default>([T; 3]);
+type Vector3<T> = [T;3];
 
 #[derive(Default, Debug)]
 pub struct Matrix3<T>
@@ -113,7 +112,7 @@ impl<T: Default + Copy + ops::AddAssign + ops::Mul<Output = T>> ops::Mul<Matrix3
         let mut r: Self::Output = Self::Output::default();
         for i in 0..3 {
             for j in 0..3 {
-                r.0[i] += self.0[j] * rhs.get(j, i);
+                r[i] += self[j] * rhs.get(j, i);
             }
         }
         r
@@ -299,8 +298,8 @@ mod tests {
     #[test]
     fn matrix_multiplication_vector() {
         let a: Matrix3<i32> = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
-        let b: Vector3<i32> = Vector3([0, 1, 2]);
+        let b: Vector3<i32> = [0, 1, 2];
         let c = b * a;
-        assert_eq!(c.0, [15, 18, 21]);
+        assert_eq!(c, [15, 18, 21]);
     }
 }
