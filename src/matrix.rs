@@ -1,17 +1,51 @@
-use std::{default::Default, ops};
+use std::{default::Default, fmt::Debug, ops};
 
-type Vector3<T> = [T;3];
-
-#[derive(Default, Debug)]
-pub struct Matrix3<T>
-where
-    T: Default,
+pub trait Good<T>:
+    Default
+    + Copy
+    + ops::Add<Output = T>
+    + ops::AddAssign
+    + ops::Sub<Output = T>
+    + ops::SubAssign
+    + ops::Neg<Output = T>
+    + ops::Mul<Output = T>
+    + ops::MulAssign
+    + ops::Div<Output = T>
+    + ops::DivAssign
+    + From<i8>
+    + PartialEq
+    + std::fmt::Debug
 {
+}
+impl<T> Good<T> for T where
+    T: Default
+        + Copy
+        + ops::Add<T, Output = T>
+        + ops::AddAssign<T>
+        + ops::Sub<T, Output = T>
+        + ops::SubAssign<T>
+        + ops::Neg<Output = T>
+        + ops::Mul<T, Output = T>
+        + ops::MulAssign<T>
+        + ops::Div<T, Output = T>
+        + ops::DivAssign<T>
+        + From<i8>
+        + PartialEq
+        + std::fmt::Debug
+{
+}
+
+pub type Vector3<T> = [T; 3];
+
+#[derive(Debug)]
+pub struct Matrix3<T: Good<T>> {
     data: [T; 9],
 }
-impl<T: Default + Copy> Matrix3<T> {
+
+impl<T: Good<T>> Matrix3<T> {
     pub fn new() -> Self {
-        Default::default()
+        let data: [T; 9] = Default::default();
+        Self { data }
     }
     pub fn data(&self) -> [T; 9] {
         self.data
@@ -53,18 +87,55 @@ impl<T: Default + Copy> Matrix3<T> {
     // galmeida: missing rows() and cols() iters
 }
 
-impl<T: Default + Copy + ops::Mul<Output = T> + ops::Add<Output = T> + ops::Sub<Output = T>> Matrix3<T> {
+impl<T: Good<T>> Matrix3<T> {
     pub fn determinant(&self) -> T {
-        self.get(0, 0) * self.get(1, 1) * self.get(2, 2) +
-        self.get(0, 1) * self.get(1, 2) * self.get(2, 0) +
-        self.get(0, 2) * self.get(1, 0) * self.get(2, 1) -
-        self.get(0, 2) * self.get(1, 1) * self.get(2, 0) -
-        self.get(0, 1) * self.get(1, 0) * self.get(2, 2) -
-        self.get(0, 0) * self.get(1, 2) * self.get(2, 1)
+        self.get(0, 0) * self.get(1, 1) * self.get(2, 2)
+            + self.get(0, 1) * self.get(1, 2) * self.get(2, 0)
+            + self.get(0, 2) * self.get(1, 0) * self.get(2, 1)
+            - self.get(0, 2) * self.get(1, 1) * self.get(2, 0)
+            - self.get(0, 1) * self.get(1, 0) * self.get(2, 2)
+            - self.get(0, 0) * self.get(1, 2) * self.get(2, 1)
+    }
+
+    pub fn inverse(&self) -> Result<Matrix3<T>, &'static str> {
+        let det = self.determinant();
+        if det == 0i8.into() {
+            return Err("Matrix is not inversible. Determinant is 0.");
+        }
+        let mut r = Matrix3::<T>::new();
+        for i in 0..3 {
+            for j in 0..3 {
+                let m2by2: Vec<T> = self
+                    .into_iter()
+                    .enumerate()
+                    .filter(|&(idx, _)| idx / 3 != i && idx % 3 != j)
+                    .map(|(_, item)| *item)
+                    .collect();
+                println!("m2by2 for {}:{}   {:?}", i, j, m2by2);
+                let unit: T = 1i8.into();
+                let mut result: T = unit / det * ((m2by2[0] * m2by2[3]) - (m2by2[1] * m2by2[2]));
+                if (i + j) % 2 != 0 {
+                    result = -result;
+                }
+                // Note: j, i swapped equivalent to transpose
+                *r.get_mut(j, i) = result;
+            }
+        }
+        Ok(r)
+    }
+
+    pub fn transpose(&self) -> Matrix3<T> {
+        let mut r = Matrix3::<T>::new();
+        for i in 0..3 {
+            for j in 0..3 {
+                *r.get_mut(i, j) = self.get(j, i);
+            }
+        }
+        r
     }
 }
 
-impl<T: Default> IntoIterator for Matrix3<T> {
+impl<T: Good<T>> IntoIterator for Matrix3<T> {
     type Item = T;
     type IntoIter = std::array::IntoIter<T, 9>;
 
@@ -72,7 +143,7 @@ impl<T: Default> IntoIterator for Matrix3<T> {
         self.data.into_iter()
     }
 }
-impl<'a, T: Default> IntoIterator for &'a Matrix3<T> {
+impl<'a, T: Good<T>> IntoIterator for &'a Matrix3<T> {
     type Item = &'a T;
     type IntoIter = std::array::IntoIter<&'a T, 9>;
 
@@ -92,7 +163,7 @@ impl<'a, T: Default> IntoIterator for &'a Matrix3<T> {
     }
 }
 // galmeida: fix
-// impl<'a, T: Default> IntoIterator for &'a mut Matrix3<T> {
+// impl<'a, T : Good<T>> IntoIterator for &'a mut Matrix3<T> {
 //     type Item = &'a mut T;
 //     type IntoIter = std::array::IntoIter<&'a mut T, 9>;
 
@@ -114,9 +185,7 @@ impl<'a, T: Default> IntoIterator for &'a Matrix3<T> {
 //     }
 // }
 
-impl<T: Default + Copy + ops::AddAssign + ops::Mul<Output = T>> ops::Mul<Matrix3<T>>
-    for Vector3<T>
-{
+impl<T: Good<T>> ops::Mul<Matrix3<T>> for Vector3<T> {
     type Output = Vector3<T>;
 
     fn mul(self, rhs: Matrix3<T>) -> Self::Output {
@@ -130,9 +199,7 @@ impl<T: Default + Copy + ops::AddAssign + ops::Mul<Output = T>> ops::Mul<Matrix3
     }
 }
 
-impl<T: Default + Copy + ops::AddAssign + ops::Mul<Output = T>> ops::Mul<Matrix3<T>>
-    for Matrix3<T>
-{
+impl<T: Good<T>> ops::Mul<Matrix3<T>> for Matrix3<T> {
     type Output = Matrix3<T>;
 
     fn mul(self, rhs: Matrix3<T>) -> Self::Output {
@@ -148,11 +215,11 @@ impl<T: Default + Copy + ops::AddAssign + ops::Mul<Output = T>> ops::Mul<Matrix3
     }
 }
 
-pub trait IntoMatrix3<T: Copy + Default> {
+pub trait IntoMatrix3<T: Good<T>> {
     fn into_matrix3(&self) -> Result<Matrix3<T>, &'static str>;
 }
 
-impl<T: Default + Copy> IntoMatrix3<T> for [[T; 3]; 3] {
+impl<T: Good<T>> IntoMatrix3<T> for [[T; 3]; 3] {
     fn into_matrix3(&self) -> Result<Matrix3<T>, &'static str> {
         let mut m = Matrix3::<T>::new();
         for i in 0..3 {
@@ -164,7 +231,7 @@ impl<T: Default + Copy> IntoMatrix3<T> for [[T; 3]; 3] {
     }
 }
 
-impl<T: Default + Copy> IntoMatrix3<T> for [T; 9] {
+impl<T: Good<T>> IntoMatrix3<T> for [T; 9] {
     fn into_matrix3(&self) -> Result<Matrix3<T>, &'static str> {
         let mut m = Matrix3::<T>::new();
         for i in 0..9 {
@@ -174,7 +241,7 @@ impl<T: Default + Copy> IntoMatrix3<T> for [T; 9] {
     }
 }
 
-impl<T: Default + Copy> IntoMatrix3<T> for Vec<Vec<T>> {
+impl<T: Good<T>> IntoMatrix3<T> for Vec<Vec<T>> {
     fn into_matrix3(&self) -> Result<Matrix3<T>, &'static str> {
         let mut m = Matrix3::<T>::new();
         if self.len() != 3 {
@@ -192,7 +259,7 @@ impl<T: Default + Copy> IntoMatrix3<T> for Vec<Vec<T>> {
     }
 }
 
-impl<T: Default + Copy> IntoMatrix3<T> for Vec<T> {
+impl<T: Good<T>> IntoMatrix3<T> for Vec<T> {
     fn into_matrix3(&self) -> Result<Matrix3<T>, &'static str> {
         let mut m = Matrix3::<T>::new();
         if self.len() != 9 {
@@ -259,14 +326,14 @@ mod tests {
 
     #[test]
     fn vec_vec_into_matrix3() {
-        let a: Vec<Vec<usize>> = vec![vec![0, 1, 2], vec![3, 4, 5], vec![6, 7, 8]];
+        let a: Vec<Vec<i32>> = vec![vec![0, 1, 2], vec![3, 4, 5], vec![6, 7, 8]];
         let a = a.into_matrix3().unwrap();
         assert_eq!(a.data(), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
     }
 
     #[test]
     fn vec_into_matrix3() {
-        let a: Vec<usize> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8];
+        let a: Vec<i32> = vec![0, 1, 2, 3, 4, 5, 6, 7, 8];
         let a = a.into_matrix3().unwrap();
         assert_eq!(a.data(), [0, 1, 2, 3, 4, 5, 6, 7, 8]);
     }
@@ -289,12 +356,49 @@ mod tests {
     }
 
     #[test]
+    fn inverse_invalid_det0() {
+        let a = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
+        assert_eq!(
+            a.inverse().unwrap_err(),
+            "Matrix is not inversible. Determinant is 0."
+        );
+    }
+
+    #[test]
+    fn inverse_invalid_det0_float() {
+        let a = [[0., 1., 2.], [3., 4., 5.], [6., 7., 8.]]
+            .into_matrix3()
+            .unwrap();
+        assert_eq!(
+            a.inverse().unwrap_err(),
+            "Matrix is not inversible. Determinant is 0."
+        );
+    }
+
+    #[test]
+    fn inverse() {
+        let a: Matrix3<i32> = [[1, 0, 0], [0, 1, 0], [0, 0, 1]].into_matrix3().unwrap();
+        assert_eq!(a.inverse().unwrap().data(), [1, 0, 0, 0, 1, 0, 0, 0, 1]);
+        let a: Matrix3<f32> = [[1., 2., 3.], [0., 1., 4.], [5., 6., 0.]]
+            .into_matrix3()
+            .unwrap();
+        assert_eq!(
+            a.inverse().unwrap().data(),
+            [-24., 18., 5., 20., -15., -4., -5., 4., 1.]
+        );
+    }
+
+    #[test]
+    fn transpose() {
+        let a = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
+        assert_eq!(a.transpose().data(), [0, 3, 6, 1, 4, 7, 2, 5, 8]);
+    }
+
+    #[test]
     fn iter_imut() {
         let a = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
-        let b: Vec<_> = a.into_iter().map(|x|{
-            x
-        }).collect();
-        assert_eq!(b, vec![0,1,2,3,4,5,6,7,8]);
+        let b: Vec<_> = a.into_iter().map(|x| x).collect();
+        assert_eq!(b, vec![0, 1, 2, 3, 4, 5, 6, 7, 8]);
     }
 
     // #[test]
