@@ -53,6 +53,17 @@ impl<T: Default + Copy> Matrix3<T> {
     // galmeida: missing rows() and cols() iters
 }
 
+impl<T: Default + Copy + ops::Mul<Output = T> + ops::Add<Output = T> + ops::Sub<Output = T>> Matrix3<T> {
+    pub fn determinant(&self) -> T {
+        self.get(0, 0) * self.get(1, 1) * self.get(2, 2) +
+        self.get(0, 1) * self.get(1, 2) * self.get(2, 0) +
+        self.get(0, 2) * self.get(1, 0) * self.get(2, 1) -
+        self.get(0, 2) * self.get(1, 1) * self.get(2, 0) -
+        self.get(0, 1) * self.get(1, 0) * self.get(2, 2) -
+        self.get(0, 0) * self.get(1, 2) * self.get(2, 1)
+    }
+}
+
 impl<T: Default> IntoIterator for Matrix3<T> {
     type Item = T;
     type IntoIter = std::array::IntoIter<T, 9>;
@@ -269,6 +280,12 @@ mod tests {
         for j in 0..3 {
             assert_eq!(a.col(j), [a.get(0, j), a.get(1, j), a.get(2, j)]);
         }
+    }
+
+    #[test]
+    fn determinant() {
+        let a = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
+        assert_eq!(a.determinant(), 0);
     }
 
     #[test]
