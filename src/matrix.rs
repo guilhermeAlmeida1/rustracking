@@ -1,3 +1,4 @@
+use std::f64::consts::PI;
 use std::{default::Default, fmt::Debug, ops};
 
 pub trait Good<T>:
@@ -83,8 +84,6 @@ impl<T: Good<T>> Matrix3<T> {
         assert!(j < 3);
         [self.data[j], self.data[j + 3], self.data[j + 6]]
     }
-
-    // galmeida: missing rows() and cols() iters
 }
 
 impl<T: Good<T>> Matrix3<T> {
@@ -167,8 +166,9 @@ impl<'a, T: Good<T>> IntoIterator for &'a Matrix3<T> {
 //     type IntoIter = std::array::IntoIter<&'a mut T, 9>;
 
 //     fn into_iter(self) -> Self::IntoIter {
+//         let mut arr : [&mut T; 9];
 //         unsafe {
-//             let arr: [_; 9] = [
+//             arr = [
 //                 &mut self.data[0],
 //                 &mut self.data[1],
 //                 &mut self.data[2],
@@ -179,8 +179,8 @@ impl<'a, T: Good<T>> IntoIterator for &'a Matrix3<T> {
 //                 &mut self.data[7],
 //                 &mut self.data[8],
 //             ];
-//             arr.into_iter()
-//         }
+//         };
+//         arr.into_iter()
 //     }
 // }
 
@@ -211,6 +211,33 @@ impl<T: Good<T>> ops::Mul<Matrix3<T>> for Matrix3<T> {
             }
         }
         r
+    }
+}
+
+impl Matrix3<f64> {
+    // Euler angles used.
+    // a: alpha, b: beta, g:gamma
+    pub fn from_angles(a: f64, b: f64, g: f64) -> Result<Self, &'static str> {
+        if !(-2. * PI <= a
+            && 2. * PI >= a
+            && -2. * PI <= b
+            && 2. * PI >= b
+            && -2. * PI <= g
+            && 2. * PI >= g)
+        {
+            return Err("Given angles are not within boundaries -2PI, 2PI.");
+        }
+        let mut data: [f64; 9] = Default::default();
+        data[0] = b.cos() * g.cos();
+        data[1] = a.sin() * b.sin() * g.cos() - a.cos() * g.sin();
+        data[2] = a.cos() * b.sin() * g.cos() + a.sin() * g.sin();
+        data[3] = b.cos() * g.sin();
+        data[4] = a.sin() * b.sin() * g.sin() + a.cos() * g.cos();
+        data[5] = a.cos() * b.sin() * g.sin() - a.sin() * g.cos();
+        data[6] = -b.sin();
+        data[7] = a.sin() * b.cos();
+        data[8] = a.cos() * b.cos();
+        Ok(Self { data })
     }
 }
 
@@ -421,5 +448,20 @@ mod tests {
         let b: Vector3<i32> = [0, 1, 2];
         let c = b * a;
         assert_eq!(c, [15, 18, 21]);
+    }
+
+    #[test]
+    fn from_angles() {
+        let a = Matrix3::from_angles(PI / 2., 0., 0.).unwrap();
+        let b = Matrix3::from_angles(0., PI / 2., 0.).unwrap();
+        let c = Matrix3::from_angles(0., 0., PI / 2.).unwrap();
+        let expected_a = [1., 0., 0., 0., 0., -1., 0., 1., 0.];
+        let expected_b = [0., 0., 1., 0., 1., 0., -1., 0., 0.];
+        let expected_c = [0., -1., 0., 1., 0., 0., 0., 0., 1.];
+        for i in 0..9 {
+            assert!((a.data[i] - expected_a[i]).abs() < std::f64::EPSILON);
+            assert!((b.data[i] - expected_b[i]).abs() < std::f64::EPSILON);
+            assert!((c.data[i] - expected_c[i]).abs() < std::f64::EPSILON);
+        }
     }
 }
