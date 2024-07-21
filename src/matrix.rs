@@ -1,4 +1,5 @@
 use std::f64::consts::PI;
+use std::slice::SliceIndex;
 use std::{default::Default, fmt::Debug, ops};
 
 pub trait Good<T>:
@@ -36,11 +37,63 @@ impl<T> Good<T> for T where
 {
 }
 
-pub type Vector3<T> = [T; 3];
+#[derive(Debug, PartialEq, Clone, Copy, Default)]
+pub struct Vector3<T: Good<T>> {
+    pub data: [T; 3],
+}
+
+// pub type Vector3<T : Good<T>> = [T; 3];
+
+impl<T: Good<T>> ops::Add<Vector3<T>> for Vector3<T> {
+    type Output = Vector3<T>;
+    fn add(self, rhs: Vector3<T>) -> Self::Output {
+        let mut out: Self::Output = Default::default();
+        for i in 0..3 {
+            out[i] = self[i] + rhs[i];
+        }
+        out
+    }
+}
+
+impl<T: Good<T>> ops::Sub<Vector3<T>> for Vector3<T> {
+    type Output = Vector3<T>;
+    fn sub(self, rhs: Vector3<T>) -> Self::Output {
+        let mut out: Self::Output = Default::default();
+        for i in 0..3 {
+            out[i] = self[i] - rhs[i];
+        }
+        out
+    }
+}
+
+impl<T: Good<T>, I: SliceIndex<[T]>> ops::Index<I> for Vector3<T> {
+    type Output = I::Output;
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
+        std::ops::Index::index(&self.data, index)
+    }
+}
+
+impl<T: Good<T>, I: SliceIndex<[T]>> ops::IndexMut<I> for Vector3<T> {
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        std::ops::IndexMut::index_mut(&mut self.data, index)
+    }
+}
+
+pub trait IntoVector3<T: Good<T>> {
+    fn into_vector3(&self) -> Result<Vector3<T>, &'static str>;
+}
+
+impl<T: Good<T>> IntoVector3<T> for [T; 3] {
+    fn into_vector3(&self) -> Result<Vector3<T>, &'static str> {
+        Ok(Vector3 { data: self.clone() })
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Matrix3<T: Good<T>> {
-    data: [T; 9],
+    pub data: [T; 9],
 }
 
 impl<T: Good<T>> Matrix3<T> {
@@ -133,6 +186,21 @@ impl<T: Good<T>> Matrix3<T> {
     }
 }
 
+impl<T: Good<T>, I: SliceIndex<[T]>> ops::Index<I> for Matrix3<T> {
+    type Output = I::Output;
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output {
+        std::ops::Index::index(&self.data, index)
+    }
+}
+
+impl<T: Good<T>, I: SliceIndex<[T]>> ops::IndexMut<I> for Matrix3<T> {
+    #[inline]
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        std::ops::IndexMut::index_mut(&mut self.data, index)
+    }
+}
+
 impl<T: Good<T>> IntoIterator for Matrix3<T> {
     type Item = T;
     type IntoIter = std::array::IntoIter<T, 9>;
@@ -184,14 +252,14 @@ impl<'a, T: Good<T>> IntoIterator for &'a Matrix3<T> {
 //     }
 // }
 
-impl<T: Good<T>> ops::Mul<Matrix3<T>> for Vector3<T> {
+impl<T: Good<T>> ops::Mul<Vector3<T>> for Matrix3<T> {
     type Output = Vector3<T>;
 
-    fn mul(self, rhs: Matrix3<T>) -> Self::Output {
-        let mut r: Self::Output = Self::Output::default();
+    fn mul(self, rhs: Vector3<T>) -> Self::Output {
+        let mut r = Vector3::<T>::default();
         for i in 0..3 {
             for j in 0..3 {
-                r[i] += self[j] * rhs.get(j, i);
+                r[i] += self.get(i, j) * rhs[j];
             }
         }
         r
@@ -445,9 +513,9 @@ mod tests {
     #[test]
     fn matrix_multiplication_vector() {
         let a: Matrix3<i32> = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
-        let b: Vector3<i32> = [0, 1, 2];
-        let c = b * a;
-        assert_eq!(c, [15, 18, 21]);
+        let b: Vector3<i32> = [0, 1, 2].into_vector3().unwrap();
+        let c = a * b;
+        assert_eq!(c.data, [5, 14, 23]);
     }
 
     #[test]
