@@ -42,7 +42,17 @@ pub struct Vector3<T: Good<T>> {
     pub data: [T; 3],
 }
 
-// pub type Vector3<T : Good<T>> = [T; 3];
+impl Vector3<f64> {
+    pub fn distance(&self, other: &Vector3<f64>) -> f64 {
+        f64::sqrt(
+            self.data
+                .iter()
+                .zip(other.data.iter())
+                .map(|(a, b)| (a - b) * (a - b))
+                .sum(),
+        )
+    }
+}
 
 impl<T: Good<T>> ops::Add<Vector3<T>> for Vector3<T> {
     type Output = Vector3<T>;
@@ -531,5 +541,13 @@ mod tests {
             assert!((b.data[i] - expected_b[i]).abs() < std::f64::EPSILON);
             assert!((c.data[i] - expected_c[i]).abs() < std::f64::EPSILON);
         }
+    }
+
+    #[test]
+    fn vec3f64_distance() {
+        let a = [1., 2., 5.].into_vector3().unwrap();
+        let b = [4., 2., 1.].into_vector3().unwrap();
+        println!("distance = {}", a.distance(&b));
+        assert!((a.distance(&b) - 5.).abs() < std::f64::EPSILON);
     }
 }
