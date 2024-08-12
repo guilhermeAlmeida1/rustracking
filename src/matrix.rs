@@ -101,6 +101,14 @@ impl<T: Good<T>> IntoVector3<T> for [T; 3] {
     }
 }
 
+impl<T: Good<T>> IntoVector3<T> for (T, T, T) {
+    fn into_vector3(&self) -> Result<Vector3<T>, &'static str> {
+        Ok(Vector3 {
+            data: [self.0, self.1, self.2],
+        })
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Matrix3<T: Good<T>> {
     pub data: [T; 9],

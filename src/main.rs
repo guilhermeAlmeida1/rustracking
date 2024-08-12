@@ -1,31 +1,39 @@
 mod detector_module;
 mod file_reader;
+mod file_writer;
 mod matrix;
-use detector_module::*;
-use matrix::*;
 use plotters::prelude::*;
 
+const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";
 const OUT_FILE_NAME: &str = "plot.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let modules = file_reader::read_modules("data/boxDetector.txt")?;
+    let layers = vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0];
+    let plot_dim = 40.0;
+    file_writer::create_box_detector(&layers, DETECTOR_FILE_NAME)?;
+
+    let modules = file_reader::read_modules(DETECTOR_FILE_NAME)?;
 
     let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
         .caption("caption", ("sans-serif", 50))
-        .build_cartesian_2d(-1.0..6.0, -1.0..6.0)?;
+        .build_cartesian_2d(
+            -plot_dim / 2.0..plot_dim / 2.0,
+            -plot_dim / 2.0..plot_dim / 2.0,
+        )?;
 
     for module in modules {
+        let projection: Vec<_> = module
+            .vertices()
+            .iter()
+            .map(|&it| (it.data[0], it.data[1]))
+            .collect();
         // let projection: Vec<_> = module
         //     .vertices()
         //     .iter()
-        //     .map(|&it| (it.data[0], it.data[1]))
+        //     .map(|&it| (it.data[1], it.data[2]))
         //     .collect();
-        let projection: Vec<_> = module.vertices()
-            .iter()
-            .map(|&it| (it.data[1], it.data[2]))
-            .collect();
-        println!("{:?}", module.vertices());
+        // println!("{:?}", module.vertices());
 
         chart.draw_series(std::iter::once(PathElement::new(projection, RED)))?;
     }
