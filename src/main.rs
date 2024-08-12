@@ -1,7 +1,6 @@
 mod detector_module;
 mod file_reader;
 mod matrix;
-mod plotter;
 use detector_module::*;
 use matrix::*;
 use plotters::prelude::*;
