@@ -1,6 +1,6 @@
 use crate::matrix::*;
 
-type Pos2 = (i32, i32);
+type Pos2 = (u64, u64);
 
 #[derive(Debug)]
 pub struct DetectorModule {
@@ -21,17 +21,11 @@ impl DetectorModule {
         translation: Vector3<f64>,
         rotation: Matrix3<f64>,
     ) -> Result<Self, &'static str> {
-        match rotation.inverse() {
-            Ok(inv) => {
-                let transp = rotation.transpose();
-                for i in 0..9 {
-                    if (inv[i] - transp[i]).abs() >= std::f64::EPSILON {
-                        return Err("Rotation matrix must be orthogonal.");
-                    }
-                }
-            }
-            Err(err) => {
-                return Err(err);
+        let inv = rotation.inverse()?;
+        let transp = rotation.transpose();
+        for i in 0..9 {
+            if (inv[i] - transp[i]).abs() >= std::f64::EPSILON {
+                return Err("Rotation matrix must be orthogonal.");
             }
         }
 
@@ -113,7 +107,6 @@ mod tests {
         let expected = [[1., 2., 3.], [1., 2., 13.], [-19., 2., 13.], [-19., 2., 3.]];
         for i in 0..4 {
             for j in 0..3 {
-                // cos and sin lose precision
                 assert!((verts[i][j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
             }
         }
