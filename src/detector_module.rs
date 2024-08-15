@@ -1,13 +1,13 @@
 use crate::matrix::*;
 
-type Pos2 = (u64, u64);
+type PixelPosition = (u64, u64);
 
 #[derive(Debug)]
 pub struct DetectorModule {
     id: u64,
     dims: (f64, f64),
-    pixels_dims: Pos2,
-    hits: Vec<Pos2>,
+    pixels_dims: PixelPosition,
+    hits: Vec<PixelPosition>,
     translation: Vector3<f64>,
     rotation: Matrix3<f64>,
 }
@@ -16,7 +16,7 @@ impl DetectorModule {
     pub fn new(
         id: u64,
         dims: (f64, f64),
-        pixels_dims: Pos2,
+        pixels_dims: PixelPosition,
         translation: Vector3<f64>,
         rotation: Matrix3<f64>,
     ) -> Result<Self, &'static str> {
@@ -52,7 +52,7 @@ impl DetectorModule {
         [v1, v2, v3, v4]
     }
 
-    pub fn set_hits(&mut self, hits: Vec<Pos2>) -> Result<(), &'static str> {
+    pub fn set_hits(&mut self, hits: Vec<PixelPosition>) -> Result<(), &'static str> {
         for hit in &hits {
             if hit.0 > self.pixels_dims.0 || hit.1 > self.pixels_dims.1 {
                 return Err("Hit not within pixel boundaries.");
