@@ -1,13 +1,12 @@
 use crate::matrix::*;
 
-type PixelPosition = (u64, u64);
+pub type PixelPosition = (u64, u64);
 
 #[derive(Debug)]
 pub struct DetectorModule {
     id: u64,
     dims: (f64, f64),
     pixels_dims: PixelPosition,
-    hits: Vec<PixelPosition>,
     translation: Vector3<f64>,
     rotation: Matrix3<f64>,
 }
@@ -32,7 +31,6 @@ impl DetectorModule {
             id,
             dims,
             pixels_dims,
-            hits: vec![],
             translation,
             rotation,
         })
@@ -50,16 +48,6 @@ impl DetectorModule {
         let v4: Vector3<f64> = self.translation + self.rotation * vec_y;
         let v3: Vector3<f64> = v4 + v2 - v1;
         [v1, v2, v3, v4]
-    }
-
-    pub fn set_hits(&mut self, hits: Vec<PixelPosition>) -> Result<(), &'static str> {
-        for hit in &hits {
-            if hit.0 > self.pixels_dims.0 || hit.1 > self.pixels_dims.1 {
-                return Err("Hit not within pixel boundaries.");
-            }
-        }
-        self.hits = hits;
-        Ok(())
     }
 }
 
@@ -117,35 +105,5 @@ mod tests {
                 assert!((verts[i][j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
             }
         }
-    }
-
-    #[test]
-    fn set_hits_invalid_out_of_bounds() {
-        let pixel_dims = (10, 10);
-        let mut module = DetectorModule::new(
-            0,
-            (0., 0.),
-            pixel_dims,
-            Vector3::identity(),
-            Matrix3::identity(),
-        )
-        .unwrap();
-        module
-            .set_hits(vec![(0, 11)])
-            .expect_err("Hit not within pixel boundaries.");
-    }
-
-    #[test]
-    fn set_hits() {
-        let pixel_dims = (10, 10);
-        let mut module = DetectorModule::new(
-            0,
-            (0., 0.),
-            pixel_dims,
-            Vector3::identity(),
-            Matrix3::identity(),
-        )
-        .unwrap();
-        module.set_hits(vec![(0, 0), (5, 5), (9, 9)]).unwrap();
     }
 }

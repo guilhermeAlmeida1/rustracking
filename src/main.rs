@@ -1,3 +1,4 @@
+mod clustering;
 mod detector_module;
 mod file_reader;
 mod file_writer;
