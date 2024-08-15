@@ -7,7 +7,12 @@ pub fn read_modules(filename: &str) -> Result<Vec<DetectorModule>, Box<dyn std::
     for line in fs::read_to_string(filename)?.lines() {
         let line_vec: Vec<_> = line.split_whitespace().collect();
         if line_vec.len() < 11 {
-            // return Err(format!("Failure to read file: line {} did not have enough parameters.", line));
+            let err: Box<dyn std::error::Error> = format!(
+                "Failure to read file: line {} did not have enough parameters.",
+                line
+            )
+            .into();
+            return Err(err);
         }
         let id: u64 = line_vec[0].parse()?;
         let dims = (line_vec[1].parse()?, line_vec[2].parse()?);

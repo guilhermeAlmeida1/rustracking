@@ -42,6 +42,15 @@ pub struct Vector3<T: Good<T>> {
     pub data: [T; 3],
 }
 
+impl<T: Good<T>> Vector3<T> {
+    pub fn identity() -> Self {
+        let val: T = 1.into();
+        Self {
+            data: [val, val, val],
+        }
+    }
+}
+
 impl Vector3<f64> {
     pub fn distance(&self, other: &Vector3<f64>) -> f64 {
         f64::sqrt(
@@ -200,6 +209,15 @@ impl<T: Good<T>> Matrix3<T> {
                 *r.get_mut(i, j) = self.get(j, i);
             }
         }
+        r
+    }
+
+    pub fn identity() -> Self {
+        let val: T = 1.into();
+        let mut r = Self::new();
+        r.set(val, 0, 0);
+        r.set(val, 1, 1);
+        r.set(val, 2, 2);
         r
     }
 }
@@ -387,6 +405,18 @@ impl<T: Good<T>> IntoMatrix3<T> for Vec<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn matrix_identity() {
+        let a = Matrix3::<i64>::identity();
+        assert_eq!(a.data(), [1, 0, 0, 0, 1, 0, 0, 0, 1]);
+    }
+
+    #[test]
+    fn vector_identity() {
+        let a = Vector3::<i64>::identity();
+        assert_eq!(a.data, [1, 1, 1]);
+    }
 
     #[test]
     fn default_set_get() {

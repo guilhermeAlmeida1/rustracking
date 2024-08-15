@@ -32,7 +32,7 @@ impl DetectorModule {
             id,
             dims,
             pixels_dims,
-            hits : vec![],
+            hits: vec![],
             translation,
             rotation,
         })
@@ -51,6 +51,16 @@ impl DetectorModule {
         let v3: Vector3<f64> = v4 + v2 - v1;
         [v1, v2, v3, v4]
     }
+
+    pub fn set_hits(&mut self, hits: Vec<Pos2>) -> Result<(), &'static str> {
+        for hit in &hits {
+            if hit.0 > self.pixels_dims.0 || hit.1 > self.pixels_dims.1 {
+                return Err("Hit not within pixel boundaries.");
+            }
+        }
+        self.hits = hits;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -59,11 +69,10 @@ mod tests {
 
     #[test]
     fn ctor_invalid_det_0() {
-        let transl = [1., 2., 3.].into_vector3().unwrap();
         let rot = [1., 0., 0., 0., 0.5, 0.5, 0., 0.5, 0.5]
             .into_matrix3()
             .unwrap();
-        let a = DetectorModule::new(0, (1., 2.), (10, 20), transl, rot);
+        let a = DetectorModule::new(0, (0., 0.), (0, 0), Vector3::identity(), rot);
         assert_eq!(
             a.unwrap_err(),
             "Matrix is not invertible. Determinant is 0."
@@ -72,11 +81,10 @@ mod tests {
 
     #[test]
     fn ctor_invalid_not_orthogonal() {
-        let transl = [1., 2., 3.].into_vector3().unwrap();
         let rot = [1., 0., 0., 0., 0.5, 0.5, 1., 2., 0.5]
             .into_matrix3()
             .unwrap();
-        let a = DetectorModule::new(0, (1., 2.), (10, 20), transl, rot);
+        let a = DetectorModule::new(0, (0., 0.), (0, 0), Vector3::identity(), rot);
         assert_eq!(a.unwrap_err(), "Rotation matrix must be orthogonal.");
     }
 
@@ -109,5 +117,35 @@ mod tests {
                 assert!((verts[i][j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
             }
         }
+    }
+
+    #[test]
+    fn set_hits_invalid_out_of_bounds() {
+        let pixel_dims = (10, 10);
+        let mut module = DetectorModule::new(
+            0,
+            (0., 0.),
+            pixel_dims,
+            Vector3::identity(),
+            Matrix3::identity(),
+        )
+        .unwrap();
+        module
+            .set_hits(vec![(0, 11)])
+            .expect_err("Hit not within pixel boundaries.");
+    }
+
+    #[test]
+    fn set_hits() {
+        let pixel_dims = (10, 10);
+        let mut module = DetectorModule::new(
+            0,
+            (0., 0.),
+            pixel_dims,
+            Vector3::identity(),
+            Matrix3::identity(),
+        )
+        .unwrap();
+        module.set_hits(vec![(0, 0), (5, 5), (9, 9)]).unwrap();
     }
 }
