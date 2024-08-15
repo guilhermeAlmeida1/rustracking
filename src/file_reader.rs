@@ -28,7 +28,7 @@ pub fn read_modules(filename: &str) -> Result<Vec<DetectorModule>, Box<dyn std::
             angles.1.to_radians(),
             angles.2.to_radians(),
         )?;
-        let module = DetectorModule::new(id, dims, pixels_dims, vec![], transl, rot)?;
+        let module = DetectorModule::new(id, dims, pixels_dims, transl, rot)?;
         vec.push(module);
     }
     Ok(vec)

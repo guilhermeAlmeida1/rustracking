@@ -7,7 +7,7 @@ pub struct DetectorModule {
     id: u64,
     dims: (f64, f64),
     pixels_dims: Pos2,
-    cells: Vec<Pos2>,
+    hits: Vec<Pos2>,
     translation: Vector3<f64>,
     rotation: Matrix3<f64>,
 }
@@ -17,7 +17,6 @@ impl DetectorModule {
         id: u64,
         dims: (f64, f64),
         pixels_dims: Pos2,
-        cells: Vec<Pos2>,
         translation: Vector3<f64>,
         rotation: Matrix3<f64>,
     ) -> Result<Self, &'static str> {
@@ -33,7 +32,7 @@ impl DetectorModule {
             id,
             dims,
             pixels_dims,
-            cells,
+            hits : vec![],
             translation,
             rotation,
         })
@@ -64,7 +63,7 @@ mod tests {
         let rot = [1., 0., 0., 0., 0.5, 0.5, 0., 0.5, 0.5]
             .into_matrix3()
             .unwrap();
-        let a = DetectorModule::new(0, (1., 2.), (10, 20), vec![(0, 0)], transl, rot);
+        let a = DetectorModule::new(0, (1., 2.), (10, 20), transl, rot);
         assert_eq!(
             a.unwrap_err(),
             "Matrix is not invertible. Determinant is 0."
@@ -77,7 +76,7 @@ mod tests {
         let rot = [1., 0., 0., 0., 0.5, 0.5, 1., 2., 0.5]
             .into_matrix3()
             .unwrap();
-        let a = DetectorModule::new(0, (1., 2.), (10, 20), vec![(0, 0)], transl, rot);
+        let a = DetectorModule::new(0, (1., 2.), (10, 20), transl, rot);
         assert_eq!(a.unwrap_err(), "Rotation matrix must be orthogonal.");
     }
 
@@ -87,10 +86,10 @@ mod tests {
         let rot = [1., 0., 0., 0., 0., -1., 0., 1., 0.]
             .into_matrix3()
             .unwrap();
-        let _a = DetectorModule::new(0, (1., 2.), (10, 20), vec![(0, 0)], transl, rot).unwrap();
+        let _a = DetectorModule::new(0, (1., 2.), (10, 20), transl, rot).unwrap();
 
         let rot2 = Matrix3::from_angles(std::f64::consts::PI / 2., 0., 0.).unwrap();
-        let _b = DetectorModule::new(0, (0., 0.), (0, 0), vec![], transl, rot2).unwrap();
+        let _b = DetectorModule::new(0, (0., 0.), (0, 0), transl, rot2).unwrap();
     }
 
     #[test]
@@ -99,7 +98,7 @@ mod tests {
         let transl = [1., 2., 3.].into_vector3().unwrap();
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
-        let verts = DetectorModule::new(0, dims, (1, 0), vec![], transl, rot)
+        let verts = DetectorModule::new(0, dims, (1, 0), transl, rot)
             .unwrap()
             .vertices();
 
