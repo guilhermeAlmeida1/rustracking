@@ -8,8 +8,8 @@ Everything should be implemented from scratch as much as possible, using only th
 Some of the things which will have to be implemented
 
 - [x] Matrix
-- [ ] Module
-- [ ] Hits
+- [x] Module + IO
+- [ ] Hits + IO + Event generator
 - [ ] Clustering
 - [ ] Seeding
 - [ ] Visual representation

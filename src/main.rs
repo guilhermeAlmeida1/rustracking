@@ -5,7 +5,7 @@ mod matrix;
 use plotters::prelude::*;
 
 const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";
-const OUT_FILE_NAME: &str = "plot.png";
+const OUT_FILE_NAME: &str = "data/boxDetector.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layers = vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0];
     let plot_dim = 40.0;
