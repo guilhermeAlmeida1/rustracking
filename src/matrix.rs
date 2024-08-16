@@ -49,6 +49,10 @@ impl<T: Good<T>> Vector3<T> {
             data: [val, val, val],
         }
     }
+
+    pub fn new(x: T, y: T, z: T) -> Self {
+        Self { data: [x, y, z] }
+    }
 }
 
 impl Vector3<f64> {

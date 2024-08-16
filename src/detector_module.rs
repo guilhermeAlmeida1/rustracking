@@ -49,6 +49,22 @@ impl DetectorModule {
         let v3: Vector3<f64> = v4 + v2 - v1;
         [v1, v2, v3, v4]
     }
+
+    pub fn pixel_position_to_vector3(&self, pos: (f64, f64)) -> Result<Vector3<f64>, &'static str> {
+        let pixels_dims = (self.pixels_dims.0 as f64, self.pixels_dims.1 as f64);
+        if pos.0 > pixels_dims.0 || pos.1 > pixels_dims.1 {
+            return Err("Pixel position larger than dimensions of the module.");
+        }
+
+        let pos = (
+            pos.0 as f64 / self.pixels_dims.0 as f64 * self.dims.0,
+            pos.1 as f64 / self.pixels_dims.1 as f64 * self.dims.1,
+            0.0,
+        )
+            .into_vector3()?;
+        let pos = self.translation + self.rotation * pos;
+        Ok(pos)
+    }
 }
 
 #[cfg(test)]
@@ -105,5 +121,51 @@ mod tests {
                 assert!((verts[i][j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
             }
         }
+    }
+
+    #[test]
+    fn pixel_pos_to_vector3() {
+        let dims = (10., 20.);
+        let transl = [1., 2., 3.].into_vector3().unwrap();
+        let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
+            .unwrap();
+        let module = DetectorModule::new(0, dims, (10, 10), transl, rot).unwrap();
+
+        let points: Vec<_> = [(0., 0.), (10., 0.), (0., 10.), (10., 10.), (5., 5.)]
+            .iter()
+            .map(|it| module.pixel_position_to_vector3(*it).unwrap())
+            .collect();
+
+        let expected = [
+            [1., 2., 3.],
+            [1., 2., 13.],
+            [-19., 2., 3.],
+            [-19., 2., 13.],
+            [-9., 2., 8.],
+        ];
+
+        println!("points: {:?}", points);
+        for i in 0..5 {
+            for j in 0..3 {
+                assert!((points[i][j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
+            }
+        }
+    }
+
+    #[test]
+    fn pixel_pos_to_vector3_invalid() {
+        let module = DetectorModule::new(
+            0,
+            (0., 0.),
+            (10, 10),
+            Vector3::identity(),
+            Matrix3::identity(),
+        )
+        .unwrap();
+
+        assert_eq!(
+            module.pixel_position_to_vector3((0., 11.)).unwrap_err(),
+            "Pixel position larger than dimensions of the module."
+        );
     }
 }
