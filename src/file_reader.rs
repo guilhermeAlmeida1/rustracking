@@ -1,9 +1,12 @@
 use crate::detector_module::DetectorModule;
 use crate::matrix::*;
+use std::collections::HashMap;
 use std::fs;
 
-pub fn read_modules(filename: &str) -> Result<Vec<DetectorModule>, Box<dyn std::error::Error>> {
-    let mut vec = Vec::new();
+pub fn read_modules(
+    filename: &str,
+) -> Result<HashMap<u64, DetectorModule>, Box<dyn std::error::Error>> {
+    let mut result = HashMap::new();
     for line in fs::read_to_string(filename)?.lines() {
         let line_vec: Vec<_> = line.split_whitespace().collect();
         if line_vec.len() < 11 {
@@ -34,7 +37,7 @@ pub fn read_modules(filename: &str) -> Result<Vec<DetectorModule>, Box<dyn std::
             angles.2.to_radians(),
         )?;
         let module = DetectorModule::new(id, dims, pixels_dims, transl, rot)?;
-        vec.push(module);
+        result.insert(id, module);
     }
-    Ok(vec)
+    Ok(result)
 }

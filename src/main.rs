@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             -plot_dim / 2.0..plot_dim / 2.0,
         )?;
 
-    for module in modules {
+    for (_, module) in modules {
         let projection: Vec<_> = module
             .vertices()
             .iter()
