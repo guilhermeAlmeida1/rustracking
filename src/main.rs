@@ -6,6 +6,7 @@ mod matrix;
 use plotters::prelude::*;
 
 const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";
+const HITS_FILE_NAME: &str = "data/someHits.txt";
 const OUT_FILE_NAME: &str = "data/boxDetectorSomeHits.png";
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layers = vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0];
@@ -13,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     file_writer::create_box_detector(&layers, DETECTOR_FILE_NAME)?;
 
     let modules = file_reader::read_modules(DETECTOR_FILE_NAME)?;
-    let hits = file_reader::read_hits("data/someHits.txt")?;
+    let hits = file_reader::read_hits(HITS_FILE_NAME)?;
 
     let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
     root.fill(&WHITE)?;
