@@ -18,3 +18,9 @@ Some of the things which will have to be implemented
 ## Contributing
 
 If you happen to stumble upon this project, feel free help out, keeping in mind that it is a learning exercise.
+
+## Progress pictures
+
+The box detector with a few hits and resulting 3d points:
+
+<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/main/data/boxDetectorSomeHits.png" width="560" />
