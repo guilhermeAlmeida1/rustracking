@@ -1,5 +1,6 @@
+use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
-use crate::matrix::*;
+use crate::matrix::{IntoVector3, Matrix3};
 use std::collections::HashMap;
 use std::fs;
 
@@ -11,8 +12,8 @@ pub fn read_modules(
         let line_vec: Vec<_> = line.split_whitespace().collect();
         if line_vec.len() < 11 {
             let err: Box<dyn std::error::Error> = format!(
-                "Failure to read file: line {} did not have enough parameters.",
-                line
+                "Failure to read file: {}. Line {} did not have enough parameters.",
+                filename, line
             )
             .into();
             return Err(err);
@@ -38,6 +39,25 @@ pub fn read_modules(
         )?;
         let module = DetectorModule::new(id, dims, pixels_dims, transl, rot)?;
         result.insert(id, module);
+    }
+    Ok(result)
+}
+
+pub fn read_hits(filename: &str) -> Result<Vec<Hit>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for line in fs::read_to_string(filename)?.lines() {
+        let line_vec: Vec<_> = line.split_whitespace().collect();
+        if line_vec.len() < 3 {
+            let err: Box<dyn std::error::Error> = format!(
+                "Failure to read file: {}. Line {} did not have enough parameters.",
+                filename, line
+            )
+            .into();
+            return Err(err);
+        }
+        let module_id = line_vec[0].parse()?;
+        let pos = (line_vec[1].parse()?, line_vec[2].parse()?);
+        result.push(Hit { module_id, pos });
     }
     Ok(result)
 }

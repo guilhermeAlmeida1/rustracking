@@ -9,7 +9,7 @@ Some of the things which will have to be implemented
 
 - [x] Matrix
 - [x] Module + IO
-- [ ] Hits + IO
+- [x] Hits + IO
 - [ ] Event generation
 - [ ] Clustering
 - [ ] Seeding

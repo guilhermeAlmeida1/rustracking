@@ -89,6 +89,15 @@ impl<T: Good<T>> ops::Sub<Vector3<T>> for Vector3<T> {
     }
 }
 
+impl<T: Good<T>> ops::Mul<T> for Vector3<T> {
+    type Output = Vector3<T>;
+    fn mul(self, rhs: T) -> Self::Output {
+        Self::Output {
+            data: [self[0] * rhs, self[1] * rhs, self[2] * rhs],
+        }
+    }
+}
+
 impl<T: Good<T>, I: SliceIndex<[T]>> ops::Index<I> for Vector3<T> {
     type Output = I::Output;
     #[inline]

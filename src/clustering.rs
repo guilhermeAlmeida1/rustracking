@@ -97,7 +97,10 @@ pub fn clustering(
         })
         .map(|agg| {
             (&modules[&agg.0])
-                .pixel_position_to_vector3((agg.1 .0 as f64 / agg.2, agg.1 .1 as f64 / agg.2))
+                .pixel_position_to_vector3((
+                    agg.1 .0 as f64 / agg.2 + 0.5,
+                    agg.1 .1 as f64 / agg.2 + 0.5,
+                ))
                 .unwrap()
         })
         .collect();
@@ -172,13 +175,12 @@ mod tests {
         let hits: Vec<Hit> = vec![
             Hit::new(0, (4, 4)),
             Hit::new(0, (0, 0)),
-            Hit::new(0, (6, 6)),
             Hit::new(0, (5, 5)),
             Hit::new(1, (5, 5)),
         ];
-        let result = clustering(&modules, hits).unwrap();
+        let result: Vec<Vector3<f64>> = clustering(&modules, hits).unwrap();
 
-        let expected = [[5., 5., 0.], [0., 0., 0.], [-9., 2., 13.]];
+        let expected = [[5., 5., 0.], [0.5, 0.5, 0.], [-10., 2., 14.]];
 
         println!("{:?}", result);
         for i in 0..result.len() {
