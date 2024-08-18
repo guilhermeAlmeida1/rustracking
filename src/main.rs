@@ -26,6 +26,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             -plot_dim / 2.0..plot_dim / 2.0,
         )?;
 
+    chart.draw_series(std::iter::once(PathElement::new(
+        vec![(0., 0., 0.), (2., 0., 0.)],
+        RED,
+    )))?; // X axis
+    chart.draw_series(std::iter::once(PathElement::new(
+        vec![(0., 0., 0.), (0., 2., 0.)],
+        BLUE,
+    )))?; // Y axis
+    chart.draw_series(std::iter::once(PathElement::new(
+        vec![(0., 0., 0.), (0., 0., 2.)],
+        YELLOW,
+    )))?; // Z axis
+
     for (_, module) in &modules {
         let mut verts: Vec<_> = module
             .vertices()

@@ -1,6 +1,10 @@
 use std::fs;
 use std::io::Write;
 
+const XCONST: (f64, f64, f64) = (0.0, -90.0, 0.0);
+const YCONST: (f64, f64, f64) = (-90.0, -90.0, 0.0);
+const ZCONST: (f64, f64, f64) = (0.0, 0.0, 0.0);
+
 pub fn create_box_detector(
     layers: &Vec<f64>,
     filename: &str,
@@ -8,24 +12,18 @@ pub fn create_box_detector(
     let mut id: u64 = 0;
     let mut file = fs::File::create(filename)?;
 
-    let rotations = [
-        (0.0, -90.0, 0.0),
-        (0.0, -90.0, 0.0),
-        (-90.0, -90.0, 0.0),
-        (-90.0, -90.0, 0.0),
-        (0.0, 0.0, 0.0),
-        (0.0, 0.0, 0.0),
-    ];
+    let rotations = [XCONST, XCONST, YCONST, YCONST, ZCONST, ZCONST];
     for radius in layers {
-        let radius_u = radius.round() as u64;
+        let dev = radius / 2.0;
         let translations = [
-            (-radius / 2.0, -radius / 2.0, -radius / 2.0),
-            (radius / 2.0, -radius / 2.0, -radius / 2.0),
-            (-radius / 2.0, -radius / 2.0, -radius / 2.0),
-            (-radius / 2.0, radius / 2.0, -radius / 2.0),
-            (-radius / 2.0, -radius / 2.0, -radius / 2.0),
-            (-radius / 2.0, -radius / 2.0, radius / 2.0),
+            (-dev, -dev, -dev),
+            (dev, -dev, -dev),
+            (-dev, -dev, -dev),
+            (-dev, dev, -dev),
+            (-dev, -dev, -dev),
+            (-dev, -dev, dev),
         ];
+        let radius_u = radius.round() as u64;
         for (transl, rot) in translations.iter().zip(rotations) {
             file.write_fmt(format_args!(
                 "{} {} {} {} {} {} {} {} {} {} {}\n",
