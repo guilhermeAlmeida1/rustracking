@@ -1,5 +1,6 @@
 mod clustering;
 mod detector_module;
+mod event_generator;
 mod file_reader;
 mod file_writer;
 mod matrix;
@@ -41,6 +42,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     )))?; // Z axis
 
     for (_, module) in &modules {
+        #[allow(unused_mut)]
         let mut verts: Vec<_> = module
             .vertices()
             .iter()
