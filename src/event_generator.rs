@@ -6,23 +6,33 @@
 use rand::distributions::Distribution;
 use rand::Rng;
 
-// struct Ray {
-//     alpha: f64,
-//     beta: f64,
-//     gamma: f64,
-//     // charge: f64,
-//     energy: f64,
-// }
+pub struct Ray {
+    pub theta: f64,
+    pub phi: f64,
+    // pub charge: f64,
+    pub energy: f64,
+}
 
-// enum Distributions {
-//     Uniform(f64),
-//     Gauss(f64, f64),
-//     Poisson(f64),
-//     Exponential(f64),
-// }
+pub enum Distributions {
+    Uniform(rand::distributions::Uniform<f64>),
+    Gauss(Gauss),
+    // Poisson(f64),
+    Exponential(Exponential),
+}
+
+// I would expect there to be a better way to do this
+impl Distribution<f64> for Distributions {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        match self {
+            Self::Uniform(dist) => dist.sample(rng),
+            Self::Gauss(dist) => dist.sample(rng),
+            Self::Exponential(dist) => dist.sample(rng),
+        }
+    }
+}
 
 ///
-struct Gauss {
+pub struct Gauss {
     mean: f64,
     sigma: f64,
 }
@@ -34,8 +44,18 @@ impl Distribution<f64> for Gauss {
         result
     }
 }
-struct Exponential {
+impl Gauss {
+    pub fn new(mean: f64, sigma: f64) -> Self {
+        Self {mean, sigma}
+    }
+}
+pub struct Exponential {
     lambda: f64,
+}
+impl Exponential {
+    pub fn new(lambda: f64) -> Self {
+        Self {lambda}
+    }
 }
 impl Distribution<f64> for Exponential {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
@@ -44,13 +64,26 @@ impl Distribution<f64> for Exponential {
     }
 }
 
-// pub fn generate_random_rays(energy: f64, min_energy: f64, dist: Distributions) {
-//     let mut current_energy = 0.;
-//     let mut current_momentum = (0., 0., 0.);
-//     while current_energy < energy {
+pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributions) -> Vec<Ray> {
+    use std::f64::consts::PI;
+    let mut result = Vec::new();
+    let mut rng = rand::thread_rng();
 
-//     }
-// }
+    let angle_dist = rand::distributions::Uniform::new(-PI, PI);
+
+    let mut current_energy = 0.;
+    while current_energy < total_energy {
+        let energy = dist.sample(&mut rng);
+        current_energy += energy;
+        if energy < min_energy { // do not store these values
+            continue;
+        }
+        let theta = angle_dist.sample(&mut rng);
+        let phi = angle_dist.sample(&mut rng);
+        result.push(Ray {theta, phi, energy});
+    }
+    result
+}
 
 #[cfg(test)]
 mod test {

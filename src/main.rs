@@ -8,7 +8,20 @@ use plotters::prelude::*;
 
 const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";
 const HITS_FILE_NAME: &str = "data/someHits.txt";
-const OUT_FILE_NAME: &str = "data/boxDetectorSomeHits.png";
+const OUT_FILE_NAME: &str = "data/boxDetectorRandomRays.png";
+
+fn rays_to_points(rays: &Vec<event_generator::Ray>, plot_dim: f64) -> Vec<(f64, f64, f64)> {
+    let max_ray_energy = rays.iter().max_by(|&x, &y| x.energy.partial_cmp(&y.energy).unwrap()).unwrap().energy;
+    rays.iter().map(|ray| {
+        let length = ray.energy / max_ray_energy * plot_dim;
+        (
+
+            length * ray.theta.sin() * ray.phi.cos(),
+            length * ray.theta.sin() * ray.phi.sin(),
+            length * ray.theta.cos())
+    }).collect()
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let layers = vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0];
     let plot_dim = 40.0;
@@ -17,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let modules = file_reader::read_modules(DETECTOR_FILE_NAME)?;
     let hits = file_reader::read_hits(HITS_FILE_NAME)?;
 
-    let root = BitMapBackend::new(OUT_FILE_NAME, (1024, 768)).into_drawing_area();
+    let root = BitMapBackend::new(OUT_FILE_NAME, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
@@ -71,6 +84,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             5,
             BLACK.filled(),
         ))?;
+    }
+
+    let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(50., 40.));
+    let rays = event_generator::generate_random_rays(500., 5., dist);
+    let rays = rays_to_points(&rays, plot_dim);
+    for ray in rays {
+        chart.draw_series(std::iter::once(PathElement::new([(0.,0.,0.), ray], BLACK)))?;
     }
 
     // To avoid the IO failure being ignored silently, we manually call the present function
