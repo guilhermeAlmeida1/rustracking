@@ -53,22 +53,8 @@ impl Ray {
         let r = ((b * e - a * f) * h + (c * f - d * e) * g + (a * d - b * c) * i)
             / (theta.cos() * (a * d - b * c)
                 + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
-        // let x = (r*theta.sin()*(b*phi.sin()-d*phi.cos()) + d*g-b*h)/(b*c-a*d);
-        // let y = (r*theta.sin()*(c*phi.cos()-a*phi.sin()) + a*h-c*g)/(b*c-a*d);
-        // println!("HERE: x = {x} | y = {y} | r = {r}");
-        // let as_pixel = (
-        //     (x * pixel_dims.0 as f64 / dims.0),
-        //     (y * pixel_dims.1 as f64 / dims.1),
-        // );
-        // println!("{:?}", module.pixel_position_to_vector3(as_pixel));
 
         if r > 0. && self.energy > r * ENERGY_LOSS_PER_UNIT_DISTANCE {
-            // let x = ((r * theta.cos() - i) * (b * phi.sin() - d * phi.cos())
-            //     + f * (g * phi.sin() - h * phi.cos()))
-            //     / (f * (c * phi.cos() - a * phi.sin()) + e * (b * phi.sin() - d * phi.cos()));
-            // let y = ((r * theta.cos() - h) * (a * phi.sin() - c * phi.cos())
-            //     + e * (g * phi.sin() - h * phi.cos()))
-            //     / (e * (d * phi.cos() - b * phi.sin()) + f * (a * phi.sin() - c * phi.cos()));
             let (x, y, z) = self.at_radius(r);
 
             // Three different factorizations of the solution need to be calculated
@@ -146,7 +132,6 @@ impl Distribution<f64> for Distributions {
     }
 }
 
-///
 pub struct Gauss {
     mean: f64,
     sigma: f64,
