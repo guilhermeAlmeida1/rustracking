@@ -113,24 +113,6 @@ impl<T: Good<T>, I: SliceIndex<[T]>> ops::IndexMut<I> for Vector3<T> {
     }
 }
 
-pub trait IntoVector3<T: Good<T>> {
-    fn into_vector3(&self) -> Result<Vector3<T>, &'static str>;
-}
-
-impl<T: Good<T>> IntoVector3<T> for [T; 3] {
-    fn into_vector3(&self) -> Result<Vector3<T>, &'static str> {
-        Ok(Vector3 { data: self.clone() })
-    }
-}
-
-impl<T: Good<T>> IntoVector3<T> for (T, T, T) {
-    fn into_vector3(&self) -> Result<Vector3<T>, &'static str> {
-        Ok(Vector3 {
-            data: [self.0, self.1, self.2],
-        })
-    }
-}
-
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Matrix3<T: Good<T>> {
     pub data: [T; 9],
@@ -574,7 +556,7 @@ mod tests {
     #[test]
     fn matrix_multiplication_vector() {
         let a: Matrix3<i32> = [[0, 1, 2], [3, 4, 5], [6, 7, 8]].into_matrix3().unwrap();
-        let b: Vector3<i32> = [0, 1, 2].into_vector3().unwrap();
+        let b: Vector3<i32> = Vector3::new(0, 1, 2);
         let c = a * b;
         assert_eq!(c.data, [5, 14, 23]);
     }
@@ -596,8 +578,8 @@ mod tests {
 
     #[test]
     fn vec3f64_distance() {
-        let a = [1., 2., 5.].into_vector3().unwrap();
-        let b = [4., 2., 1.].into_vector3().unwrap();
+        let a = Vector3::new(1., 2., 5.);
+        let b = Vector3::new(4., 2., 1.);
         println!("distance = {}", a.distance(&b));
         assert!((a.distance(&b) - 5.).abs() < std::f64::EPSILON);
     }

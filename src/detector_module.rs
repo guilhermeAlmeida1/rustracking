@@ -6,7 +6,7 @@ pub type PixelPosition = (u64, u64);
 pub struct DetectorModule {
     id: u64,
     dims: (f64, f64),
-    pixels_dims: PixelPosition,
+    pixel_dims: PixelPosition,
     translation: Vector3<f64>,
     rotation: Matrix3<f64>,
 }
@@ -15,7 +15,7 @@ impl DetectorModule {
     pub fn new(
         id: u64,
         dims: (f64, f64),
-        pixels_dims: PixelPosition,
+        pixel_dims: PixelPosition,
         translation: Vector3<f64>,
         rotation: Matrix3<f64>,
     ) -> Result<Self, &'static str> {
@@ -30,10 +30,23 @@ impl DetectorModule {
         Ok(DetectorModule {
             id,
             dims,
-            pixels_dims,
+            pixel_dims,
             translation,
             rotation,
         })
+    }
+
+    pub fn rotation(&self) -> Matrix3<f64> {
+        self.rotation
+    }
+    pub fn translation(&self) -> Vector3<f64> {
+        self.translation
+    }
+    pub fn dims(&self) -> (f64, f64) {
+        self.dims
+    }
+    pub fn pixel_dims(&self) -> PixelPosition {
+        self.pixel_dims
     }
 
     pub fn vertices(&self) -> [Vector3<f64>; 4] {
@@ -51,43 +64,34 @@ impl DetectorModule {
     }
 
     pub fn pixel_position_to_vector3(&self, pos: (f64, f64)) -> Result<Vector3<f64>, &'static str> {
-        let pixels_dims = (self.pixels_dims.0 as f64, self.pixels_dims.1 as f64);
-        if pos.0 > pixels_dims.0 || pos.1 > pixels_dims.1 {
+        let pixel_dims = (self.pixel_dims.0 as f64, self.pixel_dims.1 as f64);
+        if pos.0 > pixel_dims.0 || pos.1 > pixel_dims.1 {
             return Err("Pixel position larger than dimensions of the module.");
         }
 
-        let pos = (
-            pos.0 as f64 / self.pixels_dims.0 as f64 * self.dims.0,
-            pos.1 as f64 / self.pixels_dims.1 as f64 * self.dims.1,
+        let pos = Vector3::new(
+            pos.0 as f64 / self.pixel_dims.0 as f64 * self.dims.0,
+            pos.1 as f64 / self.pixel_dims.1 as f64 * self.dims.1,
             0.0,
-        )
-            .into_vector3()?;
+        );
         let pos = self.translation + self.rotation * pos;
         Ok(pos)
     }
 
     pub fn pixel_vertices(&self, pos: PixelPosition) -> Result<[Vector3<f64>; 4], &'static str> {
-        if pos.0 > self.pixels_dims.0 || pos.1 > self.pixels_dims.1 {
+        if pos.0 > self.pixel_dims.0 || pos.1 > self.pixel_dims.1 {
             return Err("Pixel position larger than dimensions of the module.");
         }
-        let step_x = self.rotation
-            * [self.dims.0 / self.pixels_dims.0 as f64, 0., 0.]
-                .into_vector3()
-                .unwrap();
-        let step_y = self.rotation
-            * [0., self.dims.1 / self.pixels_dims.1 as f64, 0.]
-                .into_vector3()
-                .unwrap();
+        let step_x = self.rotation * Vector3::new(self.dims.0 / self.pixel_dims.0 as f64, 0., 0.);
+        let step_y = self.rotation * Vector3::new(0., self.dims.1 / self.pixel_dims.1 as f64, 0.);
 
         let v1: Vector3<f64> = self.translation
             + self.rotation
-                * [
-                    pos.0 as f64 * self.dims.0 / self.pixels_dims.0 as f64,
-                    pos.1 as f64 * self.dims.1 / self.pixels_dims.1 as f64,
+                * Vector3::new(
+                    pos.0 as f64 * self.dims.0 / self.pixel_dims.0 as f64,
+                    pos.1 as f64 * self.dims.1 / self.pixel_dims.1 as f64,
                     0.,
-                ]
-                .into_vector3()
-                .unwrap();
+                );
         let v2: Vector3<f64> = v1 + step_x;
         let v3: Vector3<f64> = v2 + step_y;
         let v4: Vector3<f64> = v3 - step_x;
@@ -122,7 +126,7 @@ mod tests {
 
     #[test]
     fn ctor_valid() {
-        let transl = [1., 2., 3.].into_vector3().unwrap();
+        let transl = Vector3::new(1., 2., 3.);
         let rot = [1., 0., 0., 0., 0., -1., 0., 1., 0.]
             .into_matrix3()
             .unwrap();
@@ -135,7 +139,7 @@ mod tests {
     #[test]
     fn vertices() {
         let dims = (10., 20.);
-        let transl = [1., 2., 3.].into_vector3().unwrap();
+        let transl = Vector3::new(1., 2., 3.);
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
         let verts = DetectorModule::new(0, dims, (1, 0), transl, rot)
@@ -154,7 +158,7 @@ mod tests {
     #[test]
     fn pixel_pos_to_vector3() {
         let dims = (10., 20.);
-        let transl = [1., 2., 3.].into_vector3().unwrap();
+        let transl = Vector3::new(1., 2., 3.);
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
         let module = DetectorModule::new(0, dims, (10, 10), transl, rot).unwrap();
@@ -200,7 +204,7 @@ mod tests {
     #[test]
     fn pixel_vertices() {
         let dims = (10., 20.);
-        let transl = [1., 2., 3.].into_vector3().unwrap();
+        let transl = Vector3::new(1., 2., 3.);
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
         let module = DetectorModule::new(0, dims, (10, 10), transl, rot).unwrap();

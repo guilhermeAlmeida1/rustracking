@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 
 const XCONST: (f64, f64, f64) = (0.0, -90.0, 0.0);
-const YCONST: (f64, f64, f64) = (-90.0, -90.0, 0.0);
+const YCONST: (f64, f64, f64) = (90.0, 0.0, 0.0);
 const ZCONST: (f64, f64, f64) = (0.0, 0.0, 0.0);
 
 pub fn create_box_detector(

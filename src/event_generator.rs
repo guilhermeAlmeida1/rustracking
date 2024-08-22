@@ -3,8 +3,12 @@
 // check whether intersections are within detector boundaries
 // create hits with a random spread
 
+use crate::detector_module::{DetectorModule, PixelPosition};
 use rand::distributions::Distribution;
 use rand::Rng;
+use std::f64::consts::PI;
+
+const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.;
 
 pub struct Ray {
     pub theta: f64,
@@ -13,10 +17,121 @@ pub struct Ray {
     pub energy: f64,
 }
 
+impl Ray {
+    pub fn intersect(&self, module: &DetectorModule) -> Option<((f64, f64, f64), PixelPosition)> {
+        /*
+         * Any point along the ray can be defined as r * e_r,
+         * with: e_r = (sin(theta)cos(phi), sin(theta)sin(phi), cos(theta)),
+         * and r ranging from 0 to energy / energy_loss_per_unit_distance
+         *
+         * Any point inside a detector module can be defined as:
+         * translation + rotation * (x, y, 0)
+         * with x, y ranging from 0 to the module dimensions.
+         *
+         * This function equalizes the two, analytically solving the equation:
+         * r * e_r = translation + rotation * (x, y, 0) <=>
+         *
+         *     |r sin(theta)cos(phi) |     |A B 0|   |x|     |G|
+         * <=> |r sin(theta)sin(phi) |  =  |C D 0| * |y|  +  |H|
+         *     |r cos(theta)         |     |E F 0|   |0|     |I|
+         */
+        let theta = self.theta;
+        let phi = self.phi;
+        let dims = module.dims();
+        let pixel_dims = module.pixel_dims();
+        let rotation = module.rotation();
+        let translation = module.translation();
+        let a = rotation[0];
+        let b = rotation[1];
+        let c = rotation[3];
+        let d = rotation[4];
+        let e = rotation[6];
+        let f = rotation[7];
+        let g = translation[0];
+        let h = translation[1];
+        let i = translation[2];
+        let r = ((b * e - a * f) * h + (c * f - d * e) * g + (a * d - b * c) * i)
+            / (theta.cos() * (a * d - b * c)
+                + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
+        // let x = (r*theta.sin()*(b*phi.sin()-d*phi.cos()) + d*g-b*h)/(b*c-a*d);
+        // let y = (r*theta.sin()*(c*phi.cos()-a*phi.sin()) + a*h-c*g)/(b*c-a*d);
+        // println!("HERE: x = {x} | y = {y} | r = {r}");
+        // let as_pixel = (
+        //     (x * pixel_dims.0 as f64 / dims.0),
+        //     (y * pixel_dims.1 as f64 / dims.1),
+        // );
+        // println!("{:?}", module.pixel_position_to_vector3(as_pixel));
+
+        if r > 0. && self.energy > r * ENERGY_LOSS_PER_UNIT_DISTANCE {
+            // let x = ((r * theta.cos() - i) * (b * phi.sin() - d * phi.cos())
+            //     + f * (g * phi.sin() - h * phi.cos()))
+            //     / (f * (c * phi.cos() - a * phi.sin()) + e * (b * phi.sin() - d * phi.cos()));
+            // let y = ((r * theta.cos() - h) * (a * phi.sin() - c * phi.cos())
+            //     + e * (g * phi.sin() - h * phi.cos()))
+            //     / (e * (d * phi.cos() - b * phi.sin()) + f * (a * phi.sin() - c * phi.cos()));
+            let (x, y, z) = self.at_radius(r);
+
+            // Three different factorizations of the solution need to be calculated
+            // because depending on the rotation matrix up to 2 of these are
+            // invalid because they result in a division by 0
+            if (a * d - b * c - 0.).abs() > 10. * std::f64::EPSILON {
+                let module_x = (d * (x - g) + b * (h - y)) / (a * d - b * c);
+                let module_y = (c * (x - g) + a * (h - y)) / (b * c - a * d);
+
+                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
+                    let pixel_pos = (
+                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                    );
+                    return Some(((x, y, z), pixel_pos));
+                }
+            } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
+                let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
+                let module_y = (e * (x - g) + a * (i - z)) / (b * e - a * f);
+
+                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
+                    let pixel_pos = (
+                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                    );
+                    return Some(((x, y, z), pixel_pos));
+                }
+            } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
+                let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
+                let module_y = (e * (y - h) + c * (i - z)) / (d * e - c * f);
+
+                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
+                    let pixel_pos = (
+                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                    );
+                    return Some(((x, y, z), pixel_pos));
+                }
+            }
+        }
+        None
+    }
+
+    pub fn at_radius(&self, r: f64) -> (f64, f64, f64) {
+        (
+            r * self.theta.sin() * self.phi.cos(),
+            r * self.theta.sin() * self.phi.sin(),
+            r * self.theta.cos(),
+        )
+    }
+
+    pub fn end(&self) -> (f64, f64, f64) {
+        self.at_radius(self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE)
+    }
+}
+
 pub enum Distributions {
+    #[allow(unused)]
     Uniform(rand::distributions::Uniform<f64>),
+    #[allow(unused)]
     Gauss(Gauss),
     // Poisson(f64),
+    #[allow(unused)]
     Exponential(Exponential),
 }
 
@@ -46,7 +161,7 @@ impl Distribution<f64> for Gauss {
 }
 impl Gauss {
     pub fn new(mean: f64, sigma: f64) -> Self {
-        Self {mean, sigma}
+        Self { mean, sigma }
     }
 }
 pub struct Exponential {
@@ -54,18 +169,19 @@ pub struct Exponential {
 }
 impl Exponential {
     pub fn new(lambda: f64) -> Self {
-        Self {lambda}
+        Self { lambda }
     }
 }
 impl Distribution<f64> for Exponential {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
+        // Apply the inverse commulative distribution function
+        // to a random number between 0 and 1
         let r: f64 = rng.gen();
         -f64::ln(1. - r) / self.lambda
     }
 }
 
 pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributions) -> Vec<Ray> {
-    use std::f64::consts::PI;
     let mut result = Vec::new();
     let mut rng = rand::thread_rng();
 
@@ -75,12 +191,13 @@ pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributi
     while current_energy < total_energy {
         let energy = dist.sample(&mut rng);
         current_energy += energy;
-        if energy < min_energy { // do not store these values
+        if energy < min_energy {
+            // do not store these values
             continue;
         }
         let theta = angle_dist.sample(&mut rng);
         let phi = angle_dist.sample(&mut rng);
-        result.push(Ray {theta, phi, energy});
+        result.push(Ray { theta, phi, energy });
     }
     result
 }
@@ -88,6 +205,7 @@ pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributi
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::matrix::{Matrix3, Vector3};
 
     #[test]
     #[ignore]
@@ -154,5 +272,86 @@ mod test {
             }
         }
         assert!(assertion);
+    }
+
+    #[test]
+    fn intersect() {
+        let rotation = Matrix3::from_angles(0., -PI / 2., 0.).unwrap(); // xconst
+        let translation = Vector3::new(10., -5., -5.);
+        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+
+        let ray = Ray {
+            theta: PI / 2.,
+            phi: 0.,
+            energy: 12.,
+        };
+        let (result, pixel) = ray.intersect(&module).unwrap();
+
+        let expected = (10., 0., 0.);
+        println!("result: {:?}", result);
+        assert!((result.0 - expected.0).abs() < 10. * std::f64::EPSILON);
+        assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
+        assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
+        assert_eq!(pixel, (5, 5));
+
+        let ray = Ray {
+            theta: PI / 2.,
+            phi: 0.,
+            energy: 9.,
+        };
+        assert!(ray.intersect(&module).is_none());
+
+        let ray = Ray {
+            theta: 0.,
+            phi: 0.,
+            energy: 10000.,
+        };
+        assert!(ray.intersect(&module).is_none());
+
+        let translation = Vector3::new(10., 1., 1.);
+        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+
+        let ray = Ray {
+            theta: PI / 2.,
+            phi: 0.,
+            energy: 12.,
+        };
+        assert!(ray.intersect(&module).is_none());
+
+        let rotation = Matrix3::from_angles(PI / 2., 0., 0.).unwrap(); // yconst
+        let translation = Vector3::new(-5., 10., -5.);
+        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+
+        let ray = Ray {
+            theta: PI / 2.,
+            phi: PI / 2.,
+            energy: 12.,
+        };
+        let (result, pixel) = ray.intersect(&module).unwrap();
+
+        let expected = (0., 10., 0.);
+        println!("result: {:?}", result);
+        assert!((result.0 - expected.0).abs() < 10. * std::f64::EPSILON);
+        assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
+        assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
+        assert_eq!(pixel, (5, 5));
+
+        let rotation = Matrix3::identity(); // zconst
+        let translation = Vector3::new(-5., -5., 10.);
+        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+
+        let ray = Ray {
+            theta: 0.,
+            phi: 0.,
+            energy: 12.,
+        };
+        let (result, pixel) = ray.intersect(&module).unwrap();
+
+        let expected = (0., 0., 10.);
+        println!("result: {:?}", result);
+        assert!((result.0 - expected.0).abs() < 10. * std::f64::EPSILON);
+        assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
+        assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
+        assert_eq!(pixel, (5, 5));
     }
 }

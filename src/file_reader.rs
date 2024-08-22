@@ -1,6 +1,6 @@
 use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
-use crate::matrix::{IntoVector3, Matrix3};
+use crate::matrix::{Matrix3, Vector3};
 use std::collections::HashMap;
 use std::fs;
 
@@ -20,13 +20,12 @@ pub fn read_modules(
         }
         let id: u64 = line_vec[0].parse()?;
         let dims = (line_vec[1].parse()?, line_vec[2].parse()?);
-        let transl = [
+        let transl = Vector3::new(
             line_vec[3].parse()?,
             line_vec[4].parse()?,
             line_vec[5].parse()?,
-        ]
-        .into_vector3()?;
-        let pixels_dims = (line_vec[6].parse()?, line_vec[7].parse()?);
+        );
+        let pixel_dims = (line_vec[6].parse()?, line_vec[7].parse()?);
         let angles: (f64, f64, f64) = (
             line_vec[8].parse()?,
             line_vec[9].parse()?,
@@ -37,7 +36,7 @@ pub fn read_modules(
             angles.1.to_radians(),
             angles.2.to_radians(),
         )?;
-        let module = DetectorModule::new(id, dims, pixels_dims, transl, rot)?;
+        let module = DetectorModule::new(id, dims, pixel_dims, transl, rot)?;
         result.insert(id, module);
     }
     Ok(result)
