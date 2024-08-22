@@ -34,6 +34,8 @@ impl Ray {
          *     |r sin(theta)cos(phi) |     |A B 0|   |x|     |G|
          * <=> |r sin(theta)sin(phi) |  =  |C D 0| * |y|  +  |H|
          *     |r cos(theta)         |     |E F 0|   |0|     |I|
+         *
+         * see the demonstration in: misc/interset_proof.pdf
          */
         let theta = self.theta;
         let phi = self.phi;
