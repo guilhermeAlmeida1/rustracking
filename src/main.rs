@@ -81,7 +81,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             [
                 (0., 0., 0.),
                 ray.at_radius(
-                    (plot_dim / 2f64)
+                    ((plot_dim / 2. / ray.theta.sin() / ray.phi.cos()).abs() - 0.01)
+                        .min((plot_dim / 2. / ray.theta.sin() / ray.phi.sin()).abs() - 0.01)
+                        .min(plot_dim / 2. / ray.theta.cos().abs() - 0.01)
                         .min(ray.energy / event_generator::ENERGY_LOSS_PER_UNIT_DISTANCE),
                 )?,
             ],
