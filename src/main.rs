@@ -78,7 +78,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rays = event_generator::generate_random_rays(500., 5., dist);
     for ray in &rays {
         chart.draw_series(std::iter::once(PathElement::new(
-            [(0., 0., 0.), ray.end()],
+            [
+                (0., 0., 0.),
+                ray.at_radius(
+                    (plot_dim / 2f64)
+                        .min(ray.energy / event_generator::ENERGY_LOSS_PER_UNIT_DISTANCE),
+                ),
+            ],
             BLACK,
         )))?;
     }

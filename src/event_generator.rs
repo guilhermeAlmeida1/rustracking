@@ -8,7 +8,7 @@ use rand::distributions::Distribution;
 use rand::Rng;
 use std::f64::consts::PI;
 
-const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.;
+pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.;
 
 pub struct Ray {
     pub theta: f64,
