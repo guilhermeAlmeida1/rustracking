@@ -11,7 +11,7 @@ const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";
 const OUT_FILE_NAME: &str = "data/boxDetectorRandomRays.png";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let layers = vec![5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 12.5, 15.0, 20.0, 25.0, 35.0];
+    let layers = vec![2.5, 3., 3.5, 4., 4.5, 5., 6.25, 7.5, 10., 12.5, 17.5];
     let plot_dim = 40.0;
     file_writer::create_box_detector(&layers, DETECTOR_FILE_NAME)?;
 
@@ -74,8 +74,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //     ))?;
     // }
 
-    let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(50., 40.));
-    let rays = event_generator::generate_random_rays(500., 5., dist);
+    let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(10., 10.));
+    let rays = event_generator::generate_random_rays(300., 2.5, dist);
     for ray in &rays {
         chart.draw_series(std::iter::once(PathElement::new(
             [

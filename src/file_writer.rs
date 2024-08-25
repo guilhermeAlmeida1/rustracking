@@ -13,28 +13,27 @@ pub fn create_box_detector(
     let mut file = fs::File::create(filename)?;
 
     let rotations = [XCONST, XCONST, YCONST, YCONST, ZCONST, ZCONST];
-    for radius in layers {
-        let dev = radius / 2.0;
+    for &radius in layers {
         let translations = [
-            (-dev, -dev, -dev),
-            (dev, -dev, -dev),
-            (-dev, -dev, -dev),
-            (-dev, dev, -dev),
-            (-dev, -dev, -dev),
-            (-dev, -dev, dev),
+            (-radius, -radius, -radius),
+            (radius, -radius, -radius),
+            (-radius, -radius, -radius),
+            (-radius, radius, -radius),
+            (-radius, -radius, -radius),
+            (-radius, -radius, radius),
         ];
-        let radius_u = radius.round() as u64;
+        let dim = radius * 2.;
         for (transl, rot) in translations.iter().zip(rotations) {
             file.write_fmt(format_args!(
                 "{} {} {} {} {} {} {} {} {} {} {}\n",
                 id,
-                radius,
-                radius,
+                dim,
+                dim,
                 transl.0,
                 transl.1,
                 transl.2,
-                radius_u,
-                radius_u,
+                dim.round() as u64,
+                dim.round() as u64,
                 rot.0,
                 rot.1,
                 rot.2
