@@ -83,7 +83,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ray.at_radius(
                     (plot_dim / 2f64)
                         .min(ray.energy / event_generator::ENERGY_LOSS_PER_UNIT_DISTANCE),
-                ),
+                )?,
             ],
             BLACK,
         )))?;

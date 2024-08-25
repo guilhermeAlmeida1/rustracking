@@ -57,59 +57,66 @@ impl Ray {
                 + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
 
         if r > 0. && self.energy > r * ENERGY_LOSS_PER_UNIT_DISTANCE {
-            let (x, y, z) = self.at_radius(r);
+            if let Ok((x, y, z)) = self.at_radius(r) {
+                // Three different factorizations of the solution need to be calculated
+                // because depending on the rotation matrix up to 2 of these are
+                // invalid because they result in a division by 0
+                if (a * d - b * c - 0.).abs() > 10. * std::f64::EPSILON {
+                    let module_x = (d * (x - g) + b * (h - y)) / (a * d - b * c);
+                    let module_y = (c * (x - g) + a * (h - y)) / (b * c - a * d);
 
-            // Three different factorizations of the solution need to be calculated
-            // because depending on the rotation matrix up to 2 of these are
-            // invalid because they result in a division by 0
-            if (a * d - b * c - 0.).abs() > 10. * std::f64::EPSILON {
-                let module_x = (d * (x - g) + b * (h - y)) / (a * d - b * c);
-                let module_y = (c * (x - g) + a * (h - y)) / (b * c - a * d);
+                    if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1
+                    {
+                        let pixel_pos = (
+                            (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                            (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                        );
+                        return Some(((x, y, z), pixel_pos));
+                    }
+                } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
+                    let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
+                    let module_y = (e * (x - g) + a * (i - z)) / (b * e - a * f);
 
-                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
-                    let pixel_pos = (
-                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
-                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
-                    );
-                    return Some(((x, y, z), pixel_pos));
-                }
-            } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
-                let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
-                let module_y = (e * (x - g) + a * (i - z)) / (b * e - a * f);
+                    if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1
+                    {
+                        let pixel_pos = (
+                            (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                            (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                        );
+                        return Some(((x, y, z), pixel_pos));
+                    }
+                } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
+                    let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
+                    let module_y = (e * (y - h) + c * (i - z)) / (d * e - c * f);
 
-                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
-                    let pixel_pos = (
-                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
-                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
-                    );
-                    return Some(((x, y, z), pixel_pos));
-                }
-            } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
-                let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
-                let module_y = (e * (y - h) + c * (i - z)) / (d * e - c * f);
-
-                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
-                    let pixel_pos = (
-                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
-                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
-                    );
-                    return Some(((x, y, z), pixel_pos));
+                    if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1
+                    {
+                        let pixel_pos = (
+                            (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                            (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                        );
+                        return Some(((x, y, z), pixel_pos));
+                    }
                 }
             }
         }
         None
     }
 
-    pub fn at_radius(&self, r: f64) -> (f64, f64, f64) {
-        (
+    pub fn at_radius(&self, r: f64) -> Result<(f64, f64, f64), &'static str> {
+        if r > self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE {
+            return Err("Radius larger than ray's reach.");
+        }
+        Ok((
             r * self.theta.sin() * self.phi.cos(),
             r * self.theta.sin() * self.phi.sin(),
             r * self.theta.cos(),
-        )
+        ))
     }
 
     pub fn end(&self) -> (f64, f64, f64) {
         self.at_radius(self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE)
+            .unwrap()
     }
 }
 
@@ -259,6 +266,25 @@ mod test {
             }
         }
         assert!(assertion);
+    }
+
+    #[test]
+    fn at_radius() {
+        let ray = Ray {
+            theta: PI / 2.,
+            phi: PI / 2.,
+            energy: 10.,
+        };
+        let result = ray.at_radius(5.).unwrap();
+        let expected = (0., 5., 0.);
+
+        assert!((result.0 - expected.0).abs() < 10. * std::f64::EPSILON);
+        assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
+        assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
+
+        assert!(ray
+            .at_radius(ray.energy / ENERGY_LOSS_PER_UNIT_DISTANCE + 1.)
+            .is_err());
     }
 
     #[test]
