@@ -36,7 +36,7 @@ pub fn read_modules(
             angles.1.to_radians(),
             angles.2.to_radians(),
         )?;
-        let module = DetectorModule::new(id, dims, pixel_dims, transl, rot)?;
+        let module = DetectorModule::new(dims, pixel_dims, transl, rot)?;
         result.insert(id, module);
     }
     Ok(result)

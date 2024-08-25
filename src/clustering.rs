@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{detector_module::*, matrix::Vector3};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Hit {
     pub module_id: u64,
     pub pos: PixelPosition,
@@ -153,7 +153,6 @@ mod tests {
     #[test]
     fn clustering_() {
         let module0 = DetectorModule::new(
-            0,
             (10., 10.),
             (10, 10),
             Vector3::default(),
@@ -161,7 +160,6 @@ mod tests {
         )
         .unwrap();
         let module1 = DetectorModule::new(
-            1,
             (20., 20.),
             (10, 10),
             Vector3::new(1., 2., 3.),

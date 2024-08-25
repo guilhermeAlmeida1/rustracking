@@ -291,7 +291,7 @@ mod test {
     fn intersect() {
         let rotation = Matrix3::from_angles(0., -PI / 2., 0.).unwrap(); // xconst
         let translation = Vector3::new(10., -5., -5.);
-        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+        let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = Ray {
             theta: PI / 2.,
@@ -322,7 +322,7 @@ mod test {
         assert!(ray.intersect(&module).is_none());
 
         let translation = Vector3::new(10., 1., 1.);
-        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+        let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = Ray {
             theta: PI / 2.,
@@ -333,7 +333,7 @@ mod test {
 
         let rotation = Matrix3::from_angles(PI / 2., 0., 0.).unwrap(); // yconst
         let translation = Vector3::new(-5., 10., -5.);
-        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+        let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = Ray {
             theta: PI / 2.,
@@ -351,7 +351,7 @@ mod test {
 
         let rotation = Matrix3::identity(); // zconst
         let translation = Vector3::new(-5., -5., 10.);
-        let module = DetectorModule::new(0, (10., 10.), (10, 10), translation, rotation).unwrap();
+        let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = Ray {
             theta: 0.,

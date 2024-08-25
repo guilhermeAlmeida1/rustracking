@@ -4,7 +4,6 @@ pub type PixelPosition = (u64, u64);
 
 #[derive(Debug)]
 pub struct DetectorModule {
-    id: u64,
     dims: (f64, f64),
     pixel_dims: PixelPosition,
     translation: Vector3<f64>,
@@ -13,7 +12,6 @@ pub struct DetectorModule {
 
 impl DetectorModule {
     pub fn new(
-        id: u64,
         dims: (f64, f64),
         pixel_dims: PixelPosition,
         translation: Vector3<f64>,
@@ -28,7 +26,6 @@ impl DetectorModule {
         }
 
         Ok(DetectorModule {
-            id,
             dims,
             pixel_dims,
             translation,
@@ -108,7 +105,7 @@ mod tests {
         let rot = [1., 0., 0., 0., 0.5, 0.5, 0., 0.5, 0.5]
             .into_matrix3()
             .unwrap();
-        let a = DetectorModule::new(0, (0., 0.), (0, 0), Vector3::identity(), rot);
+        let a = DetectorModule::new((0., 0.), (0, 0), Vector3::identity(), rot);
         assert_eq!(
             a.unwrap_err(),
             "Matrix is not invertible. Determinant is 0."
@@ -120,7 +117,7 @@ mod tests {
         let rot = [1., 0., 0., 0., 0.5, 0.5, 1., 2., 0.5]
             .into_matrix3()
             .unwrap();
-        let a = DetectorModule::new(0, (0., 0.), (0, 0), Vector3::identity(), rot);
+        let a = DetectorModule::new((0., 0.), (0, 0), Vector3::identity(), rot);
         assert_eq!(a.unwrap_err(), "Rotation matrix must be orthogonal.");
     }
 
@@ -130,10 +127,10 @@ mod tests {
         let rot = [1., 0., 0., 0., 0., -1., 0., 1., 0.]
             .into_matrix3()
             .unwrap();
-        let _a = DetectorModule::new(0, (1., 2.), (10, 20), transl, rot).unwrap();
+        let _a = DetectorModule::new((1., 2.), (10, 20), transl, rot).unwrap();
 
         let rot2 = Matrix3::from_angles(std::f64::consts::PI / 2., 0., 0.).unwrap();
-        let _b = DetectorModule::new(0, (0., 0.), (0, 0), transl, rot2).unwrap();
+        let _b = DetectorModule::new((0., 0.), (0, 0), transl, rot2).unwrap();
     }
 
     #[test]
@@ -142,7 +139,7 @@ mod tests {
         let transl = Vector3::new(1., 2., 3.);
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
-        let verts = DetectorModule::new(0, dims, (1, 0), transl, rot)
+        let verts = DetectorModule::new(dims, (1, 0), transl, rot)
             .unwrap()
             .vertices();
 
@@ -161,7 +158,7 @@ mod tests {
         let transl = Vector3::new(1., 2., 3.);
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
-        let module = DetectorModule::new(0, dims, (10, 10), transl, rot).unwrap();
+        let module = DetectorModule::new(dims, (10, 10), transl, rot).unwrap();
 
         let points: Vec<_> = [(0., 0.), (10., 0.), (0., 10.), (10., 10.), (5., 5.)]
             .iter()
@@ -186,14 +183,9 @@ mod tests {
 
     #[test]
     fn pixel_pos_to_vector3_invalid() {
-        let module = DetectorModule::new(
-            0,
-            (0., 0.),
-            (10, 10),
-            Vector3::identity(),
-            Matrix3::identity(),
-        )
-        .unwrap();
+        let module =
+            DetectorModule::new((0., 0.), (10, 10), Vector3::identity(), Matrix3::identity())
+                .unwrap();
 
         assert_eq!(
             module.pixel_position_to_vector3((0., 11.)).unwrap_err(),
@@ -207,7 +199,7 @@ mod tests {
         let transl = Vector3::new(1., 2., 3.);
         let rot = Matrix3::from_angles(std::f64::consts::PI / 2., -std::f64::consts::PI / 2., 0.)
             .unwrap();
-        let module = DetectorModule::new(0, dims, (10, 10), transl, rot).unwrap();
+        let module = DetectorModule::new(dims, (10, 10), transl, rot).unwrap();
 
         let expected = [[1., 2., 3.], [1., 2., 4.], [-1., 2., 4.], [-1., 2., 3.]];
         let vertices = module.pixel_vertices((0, 0)).unwrap();
@@ -237,14 +229,9 @@ mod tests {
 
     #[test]
     fn pixel_vertices_invalid() {
-        let module = DetectorModule::new(
-            0,
-            (0., 0.),
-            (10, 10),
-            Vector3::identity(),
-            Matrix3::identity(),
-        )
-        .unwrap();
+        let module =
+            DetectorModule::new((0., 0.), (10, 10), Vector3::identity(), Matrix3::identity())
+                .unwrap();
 
         assert_eq!(
             module.pixel_vertices((0, 11)).unwrap_err(),
