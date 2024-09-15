@@ -23,4 +23,7 @@ If you happen to stumble upon this project, feel free help out, keeping in mind 
 
 The box detector with randomly generated rays, resulting truth hits (green), activated cells, and clustered 3d points (black):
 
-<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/main/data/randomHits/3d.svg" width="560" />
+<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/d91483292871ee5a8ecc09f806433a4e734ea324/data/randomHits/3d.svg" width="560" />
+
+A _very cool_ block of code, where I decided to process the output of the CCL algorithm in a functional manner:
+[clustering.rs#L85-L106](https://github.com/guilhermeAlmeida1/rustracking/blob/d91483292871ee5a8ecc09f806433a4e734ea324/src/clustering.rs#L85-L106)
