@@ -32,8 +32,8 @@ pub fn create_box_detector(
                 transl.0,
                 transl.1,
                 transl.2,
-                50,
-                50,
+                dim as u64 * 5,
+                dim as u64 * 5,
                 rot.0,
                 rot.1,
                 rot.2

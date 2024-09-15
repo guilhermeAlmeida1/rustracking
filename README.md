@@ -21,6 +21,6 @@ If you happen to stumble upon this project, feel free help out, keeping in mind 
 
 ## Progress pictures
 
-The box detector with a few hits and resulting 3d points:
+The box detector with randomly generated rays, resulting truth hits (green), activated cells, and clustered 3d points (black):
 
-<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/main/data/boxDetectorSomeHits.png" width="560" />
+<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/main/data/randomHits/3d.svg" width="560" />

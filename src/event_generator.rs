@@ -142,27 +142,29 @@ impl Ray {
     ) -> Vec<Hit> {
         static DIST: Gauss = Gauss {
             mean: 0.,
-            sigma: 0.2,
+            sigma: 0.15,
         };
 
         let mut result = Vec::new();
         for (id, module) in modules {
             if let Some(((_, remaining_energy), centre_pixel)) = self.intersect(module) {
                 let mut partial = Vec::new();
+                let pixel_dims = module.pixel_dims();
+                let dims = module.dims();
                 for _ in 0..1 + remaining_energy as u64 / ENERGY_HIT_SPREAD {
-                    let pixel_dims = module.pixel_dims();
-                    let dims = module.dims();
-                    loop {
-                        let x = centre_pixel.0 + (DIST.sample(rng) * pixel_dims.0 as f64 / dims.0).round() as u64;
-                        let y = centre_pixel.1 + (DIST.sample(rng) * pixel_dims.1 as f64 / dims.1).round() as u64;
-                        let hit = Hit::new(*id, (x, y));
-                        if x >= pixel_dims.0 || y >= pixel_dims.1 || partial.contains(&hit) {
-                            break;
-                        }
-                        partial.push(hit);
+                    let x = (centre_pixel.0 as f64
+                        + (DIST.sample(rng) * pixel_dims.0 as f64 / dims.0))
+                        .round() as u64;
+                    let y = (centre_pixel.1 as f64
+                        + (DIST.sample(rng) * pixel_dims.1 as f64 / dims.1))
+                        .round() as u64;
+                    let hit = Hit::new(*id, (x, y));
+                    if x >= pixel_dims.0 || y >= pixel_dims.1 || partial.contains(&hit) {
+                        continue;
                     }
-                    result.append(&mut partial);
+                    partial.push(hit);
                 }
+                result.append(&mut partial);
             }
         }
         result

@@ -78,9 +78,9 @@ fn ccl(hits: &Vec<Hit>) -> Vec<usize> {
 
 pub fn clustering(
     modules: &HashMap<u64, DetectorModule>,
-    hits: Vec<Hit>,
+    hits: &Vec<Hit>,
 ) -> Result<Vec<Vector3<f64>>, &'static str> {
-    let ccl = ccl(&hits);
+    let ccl = ccl(hits);
 
     // possibly the most hideously beautiful code I've created
     let result: Vec<Vector3<f64>> = ccl
@@ -176,7 +176,7 @@ mod tests {
             Hit::new(0, (5, 5)),
             Hit::new(1, (5, 5)),
         ];
-        let result: Vec<Vector3<f64>> = clustering(&modules, hits).unwrap();
+        let result: Vec<Vector3<f64>> = clustering(&modules, &hits).unwrap();
 
         let expected = [[5., 5., 0.], [0.5, 0.5, 0.], [-10., 2., 14.]];
 
