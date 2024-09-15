@@ -11,7 +11,7 @@ Some of the things which will have to be implemented
 - [x] Module + IO
 - [x] Hits + IO
 - [ ] Event generation
-- [ ] Clustering
+- [x] Clustering
 - [ ] Seeding
 - [ ] Visual representation
 
