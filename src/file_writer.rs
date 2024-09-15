@@ -32,8 +32,8 @@ pub fn create_box_detector(
                 transl.0,
                 transl.1,
                 transl.2,
-                dim.round() as u64,
-                dim.round() as u64,
+                50,
+                50,
                 rot.0,
                 rot.1,
                 rot.2

@@ -3,12 +3,15 @@
 // check whether intersections are within detector boundaries
 // create hits with a random spread
 
+use crate::clustering::Hit;
 use crate::detector_module::{DetectorModule, PixelPosition};
 use rand::distributions::Distribution;
 use rand::Rng;
+use std::collections::HashMap;
 use std::f64::consts::PI;
 
 pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.;
+pub const ENERGY_HIT_SPREAD: u64 = 3;
 
 pub struct Ray {
     pub theta: f64,
@@ -18,7 +21,11 @@ pub struct Ray {
 }
 
 impl Ray {
-    pub fn intersect(&self, module: &DetectorModule) -> Option<((f64, f64, f64), PixelPosition)> {
+    // Returns an optional 3D point of intersection and the remaining energy of the ray at this point
+    pub fn intersect(
+        &self,
+        module: &DetectorModule,
+    ) -> Option<(((f64, f64, f64), f64), PixelPosition)> {
         /*
          * Any point along the ray can be defined as r * e_r,
          * with: e_r = (sin(theta)cos(phi), sin(theta)sin(phi), cos(theta)),
@@ -56,8 +63,9 @@ impl Ray {
             / (theta.cos() * (a * d - b * c)
                 + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
 
-        if r > 0. && self.energy > r * ENERGY_LOSS_PER_UNIT_DISTANCE {
+        if r > 0. {
             if let Ok((x, y, z)) = self.at_radius(r) {
+                let energy = self.energy_at_radius(r).unwrap();
                 // Three different factorizations of the solution need to be calculated
                 // because depending on the rotation matrix up to 2 of these are
                 // invalid because they result in a division by 0
@@ -71,7 +79,7 @@ impl Ray {
                             (module_x * pixel_dims.0 as f64 / dims.0) as u64,
                             (module_y * pixel_dims.1 as f64 / dims.1) as u64,
                         );
-                        return Some(((x, y, z), pixel_pos));
+                        return Some((((x, y, z), energy), pixel_pos));
                     }
                 } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
                     let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
@@ -83,7 +91,7 @@ impl Ray {
                             (module_x * pixel_dims.0 as f64 / dims.0) as u64,
                             (module_y * pixel_dims.1 as f64 / dims.1) as u64,
                         );
-                        return Some(((x, y, z), pixel_pos));
+                        return Some((((x, y, z), energy), pixel_pos));
                     }
                 } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
                     let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
@@ -95,7 +103,7 @@ impl Ray {
                             (module_x * pixel_dims.0 as f64 / dims.0) as u64,
                             (module_y * pixel_dims.1 as f64 / dims.1) as u64,
                         );
-                        return Some(((x, y, z), pixel_pos));
+                        return Some((((x, y, z), energy), pixel_pos));
                     }
                 }
             }
@@ -114,9 +122,50 @@ impl Ray {
         ))
     }
 
+    pub fn energy_at_radius(&self, r: f64) -> Result<f64, &'static str> {
+        if r > self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE {
+            return Err("Radius larger than ray's reach.");
+        }
+        Ok(self.energy - r * ENERGY_LOSS_PER_UNIT_DISTANCE)
+    }
+
+    #[allow(unused)]
     pub fn end(&self) -> (f64, f64, f64) {
         self.at_radius(self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE)
             .unwrap()
+    }
+
+    pub fn create_hits<R: Rng + ?Sized>(
+        &self,
+        modules: &HashMap<u64, DetectorModule>,
+        rng: &mut R,
+    ) -> Vec<Hit> {
+        static DIST: Gauss = Gauss {
+            mean: 0.,
+            sigma: 0.2,
+        };
+
+        let mut result = Vec::new();
+        for (id, module) in modules {
+            if let Some(((_, remaining_energy), centre_pixel)) = self.intersect(module) {
+                let mut partial = Vec::new();
+                for _ in 0..1 + remaining_energy as u64 / ENERGY_HIT_SPREAD {
+                    let pixel_dims = module.pixel_dims();
+                    let dims = module.dims();
+                    loop {
+                        let x = centre_pixel.0 + (DIST.sample(rng) * pixel_dims.0 as f64 / dims.0).round() as u64;
+                        let y = centre_pixel.1 + (DIST.sample(rng) * pixel_dims.1 as f64 / dims.1).round() as u64;
+                        let hit = Hit::new(*id, (x, y));
+                        if x >= pixel_dims.0 || y >= pixel_dims.1 || partial.contains(&hit) {
+                            break;
+                        }
+                        partial.push(hit);
+                    }
+                    result.append(&mut partial);
+                }
+            }
+        }
+        result
     }
 }
 
@@ -194,6 +243,26 @@ pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributi
         result.push(Ray { theta, phi, energy });
     }
     result
+}
+
+pub fn create_hits(rays: &Vec<Ray>, modules: &HashMap<u64, DetectorModule>) -> Vec<Hit> {
+    let mut hits = Vec::new();
+    let mut rng = rand::thread_rng();
+    for ray in rays {
+        hits.append(&mut ray.create_hits(modules, &mut rng));
+    }
+    hits
+}
+
+pub fn generate_random_event(
+    total_energy: f64,
+    min_energy: f64,
+    dist: Distributions,
+    modules: &HashMap<u64, DetectorModule>,
+) -> (Vec<Ray>, Vec<Hit>) {
+    let rays = generate_random_rays(total_energy, min_energy, dist);
+    let hits = create_hits(&rays, modules);
+    (rays, hits)
 }
 
 #[cfg(test)]
@@ -298,7 +367,7 @@ mod test {
             phi: 0.,
             energy: 12.,
         };
-        let (result, pixel) = ray.intersect(&module).unwrap();
+        let ((result, _), pixel) = ray.intersect(&module).unwrap();
 
         let expected = (10., 0., 0.);
         println!("result: {:?}", result);
@@ -340,7 +409,7 @@ mod test {
             phi: PI / 2.,
             energy: 12.,
         };
-        let (result, pixel) = ray.intersect(&module).unwrap();
+        let ((result, _), pixel) = ray.intersect(&module).unwrap();
 
         let expected = (0., 10., 0.);
         println!("result: {:?}", result);
@@ -358,7 +427,7 @@ mod test {
             phi: 0.,
             energy: 12.,
         };
-        let (result, pixel) = ray.intersect(&module).unwrap();
+        let ((result, _), pixel) = ray.intersect(&module).unwrap();
 
         let expected = (0., 0., 10.);
         println!("result: {:?}", result);

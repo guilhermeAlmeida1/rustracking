@@ -54,28 +54,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         chart.draw_series(std::iter::once(PathElement::new(verts, RED)))?;
     }
 
-    // for hit in &hits {
-    //     let mut verts: Vec<_> = (&modules)[&hit.module_id]
-    //         .pixel_vertices(hit.pos)?
-    //         .iter()
-    //         .map(|&it| (it.data[0], it.data[1], it.data[2]))
-    //         .collect();
-    //     verts.push(verts[0]);
-    //     chart.draw_series(std::iter::once(PathElement::new(verts, BLUE)))?;
-    // }
+    // let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(10., 10.));
+    // let (rays, hits) = event_generator::generate_random_event(10., 2.5, dist, &modules);
 
-    // let points = clustering::clustering(&modules, hits)?;
-
-    // for point in points {
-    //     chart.plotting_area().draw(&plotters::element::Circle::new(
-    //         (point.data[0], point.data[1], point.data[2]),
-    //         5,
-    //         BLACK.filled(),
-    //     ))?;
-    // }
-
-    let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(10., 10.));
-    let rays = event_generator::generate_random_rays(300., 2.5, dist);
+    let rays = vec![event_generator::Ray{theta:0., phi:0., energy:50.}];
+    let hits = event_generator::create_hits(&rays, &modules);
     for ray in &rays {
         chart.draw_series(std::iter::once(PathElement::new(
             [
@@ -93,7 +76,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for ray in &rays {
         for (_, module) in &modules {
-            if let Some((pos, _)) = ray.intersect(module) {
+            if let Some(((pos, _), _)) = ray.intersect(module) {
                 chart.plotting_area().draw(&plotters::element::Circle::new(
                     pos,
                     3,
@@ -101,6 +84,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ))?;
             }
         }
+    }
+
+    for hit in &hits {
+        let mut verts: Vec<_> = (&modules)[&hit.module_id]
+            .pixel_vertices(hit.pos)?
+            .iter()
+            .map(|&it| (it.data[0], it.data[1], it.data[2]))
+            .collect();
+        verts.push(verts[0]);
+        chart.draw_series(std::iter::once(PathElement::new(verts, BLUE)))?;
+    }
+
+    let points = clustering::clustering(&modules, hits)?;
+
+    for point in points {
+        chart.plotting_area().draw(&plotters::element::Circle::new(
+            (point.data[0], point.data[1], point.data[2]),
+            3,
+            BLACK.filled(),
+        ))?;
     }
 
     // To avoid the IO failure being ignored silently, we manually call the present function
