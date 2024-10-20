@@ -1,6 +1,6 @@
 use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
-use crate::event_generator::Ray;
+use crate::event_generator::StraightRay;
 use crate::matrix::{Matrix3, Vector3};
 use std::collections::HashMap;
 use std::fs;
@@ -62,7 +62,7 @@ pub fn read_hits(filename: &str) -> Result<Vec<Hit>, Box<dyn std::error::Error>>
     Ok(result)
 }
 
-pub fn read_rays(filename: &str) -> Result<Vec<Ray>, Box<dyn std::error::Error>> {
+pub fn read_rays(filename: &str) -> Result<Vec<StraightRay>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
     for line in fs::read_to_string(filename)?.lines() {
         let line_vec: Vec<_> = line.split_whitespace().collect();
@@ -74,7 +74,7 @@ pub fn read_rays(filename: &str) -> Result<Vec<Ray>, Box<dyn std::error::Error>>
             .into();
             return Err(err);
         }
-        result.push(Ray {
+        result.push(StraightRay {
             energy: line_vec[0].parse()?,
             theta: line_vec[1].parse()?,
             phi: line_vec[2].parse()?,

@@ -13,14 +13,14 @@ use std::f64::consts::PI;
 pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.;
 pub const ENERGY_HIT_SPREAD: u64 = 3;
 
-pub struct Ray {
+pub struct StraightRay {
     pub theta: f64,
     pub phi: f64,
     // pub charge: f64,
     pub energy: f64,
 }
 
-impl Ray {
+impl StraightRay {
     // Returns an optional 3D point of intersection and the remaining energy of the ray at this point
     pub fn intersect(
         &self,
@@ -226,7 +226,7 @@ impl Distribution<f64> for Exponential {
     }
 }
 
-pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributions) -> Vec<Ray> {
+pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributions) -> Vec<StraightRay> {
     let mut result = Vec::new();
     let mut rng = rand::thread_rng();
 
@@ -242,12 +242,12 @@ pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributi
         }
         let theta = angle_dist.sample(&mut rng);
         let phi = angle_dist.sample(&mut rng);
-        result.push(Ray { theta, phi, energy });
+        result.push(StraightRay { theta, phi, energy });
     }
     result
 }
 
-pub fn create_hits(rays: &Vec<Ray>, modules: &HashMap<u64, DetectorModule>) -> Vec<Hit> {
+pub fn create_hits(rays: &Vec<StraightRay>, modules: &HashMap<u64, DetectorModule>) -> Vec<Hit> {
     let mut hits = Vec::new();
     let mut rng = rand::thread_rng();
     for ray in rays {
@@ -261,7 +261,7 @@ pub fn generate_random_event(
     min_energy: f64,
     dist: Distributions,
     modules: &HashMap<u64, DetectorModule>,
-) -> (Vec<Ray>, Vec<Hit>) {
+) -> (Vec<StraightRay>, Vec<Hit>) {
     let rays = generate_random_rays(total_energy, min_energy, dist);
     let hits = create_hits(&rays, modules);
     (rays, hits)
@@ -341,7 +341,7 @@ mod test {
 
     #[test]
     fn at_radius() {
-        let ray = Ray {
+        let ray = StraightRay {
             theta: PI / 2.,
             phi: PI / 2.,
             energy: 10.,
@@ -364,7 +364,7 @@ mod test {
         let translation = Vector3::new(10., -5., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = Ray {
+        let ray = StraightRay {
             theta: PI / 2.,
             phi: 0.,
             energy: 12.,
@@ -378,14 +378,14 @@ mod test {
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
         assert_eq!(pixel, (5, 5));
 
-        let ray = Ray {
+        let ray = StraightRay {
             theta: PI / 2.,
             phi: 0.,
             energy: 9.,
         };
         assert!(ray.intersect(&module).is_none());
 
-        let ray = Ray {
+        let ray = StraightRay {
             theta: 0.,
             phi: 0.,
             energy: 10000.,
@@ -395,7 +395,7 @@ mod test {
         let translation = Vector3::new(10., 1., 1.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = Ray {
+        let ray = StraightRay {
             theta: PI / 2.,
             phi: 0.,
             energy: 12.,
@@ -406,7 +406,7 @@ mod test {
         let translation = Vector3::new(-5., 10., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = Ray {
+        let ray = StraightRay {
             theta: PI / 2.,
             phi: PI / 2.,
             energy: 12.,
@@ -424,7 +424,7 @@ mod test {
         let translation = Vector3::new(-5., -5., 10.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = Ray {
+        let ray = StraightRay {
             theta: 0.,
             phi: 0.,
             energy: 12.,

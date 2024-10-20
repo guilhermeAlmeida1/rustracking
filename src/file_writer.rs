@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 
 use crate::clustering::Hit;
-use crate::event_generator::Ray;
+use crate::event_generator::StraightRay;
 
 const XCONST: (f64, f64, f64) = (0.0, -90.0, 0.0);
 const YCONST: (f64, f64, f64) = (90.0, 0.0, 0.0);
@@ -47,7 +47,7 @@ pub fn create_box_detector(
     Ok(())
 }
 
-pub fn write_rays(filename: &str, rays: &Vec<Ray>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn write_rays(filename: &str, rays: &Vec<StraightRay>) -> Result<(), Box<dyn std::error::Error>> {
     let mut file = fs::File::create(filename)?;
     for ray in rays {
         file.write_fmt(format_args!("{} {} {}\n", ray.energy, ray.theta, ray.phi,))?;

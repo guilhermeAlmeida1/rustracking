@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let rays = file_reader::read_rays(RAYS_FILE_NAME)?;
     let hits = file_reader::read_hits(HITS_FILE_NAME)?;
 
-    // let rays = vec![event_generator::Ray {
+    // let rays = vec![event_generator::StraightRay {
     //     theta: 0.,
     //     phi: 0.,
     //     energy: 15.,

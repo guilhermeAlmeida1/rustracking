@@ -1,6 +1,6 @@
 use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
-use crate::event_generator::Ray;
+use crate::event_generator::StraightRay;
 use crate::matrix::Vector3;
 use plotters::prelude::*;
 
@@ -13,7 +13,7 @@ type PlotDims = (
 );
 
 fn at_max_radius(
-    ray: &Ray,
+    ray: &StraightRay,
     plot_dims: &PlotDims,
 ) -> Result<(f64, f64, f64), Box<dyn std::error::Error>> {
     let mut result = ray.end();
@@ -45,7 +45,7 @@ pub fn plot_3d(
     filename: &str,
     plot_dims: &PlotDims,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<Ray>>,
+    rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
@@ -129,7 +129,7 @@ pub fn plot_2d_xy(
     filename: &str,
     plot_dims: &PlotDims,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<Ray>>,
+    rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
@@ -215,7 +215,7 @@ pub fn plot_2d_xz(
     filename: &str,
     plot_dims: &PlotDims,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<Ray>>,
+    rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
@@ -301,7 +301,7 @@ pub fn plot_2d_yz(
     filename: &str,
     plot_dims: &PlotDims,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<Ray>>,
+    rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
@@ -387,7 +387,7 @@ pub fn plot_all(
     file_dir: &str,
     plot_dims: &PlotDims,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<Ray>>,
+    rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
