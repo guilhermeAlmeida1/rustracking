@@ -23,11 +23,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let modules = file_reader::read_modules(DETECTOR_FILE_NAME)?;
 
-    // let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(10., 10.));
-    // let (rays, hits) = event_generator::generate_random_event(70., 2.5, dist, &modules);
+    let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(10., 10.));
+    let (rays, hits) = event_generator::generate_random_event(70., 2.5, dist, &modules);
 
-    // file_writer::write_rays(RAYS_FILE_NAME, &rays)?;
-    // file_writer::write_hits(HITS_FILE_NAME, &hits)?;
+    file_writer::write_rays(RAYS_FILE_NAME, &rays)?;
+    file_writer::write_hits(HITS_FILE_NAME, &hits)?;
 
     let rays = file_reader::read_rays(RAYS_FILE_NAME)?;
     let hits = file_reader::read_hits(HITS_FILE_NAME)?;
@@ -35,6 +35,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let rays = vec![event_generator::StraightRay {
     //     theta: 0.,
     //     phi: 0.,
+    //     origin: (0., 0., 0.),
     //     energy: 15.,
     // }];
     // let hits = event_generator::create_hits(&rays, &modules);

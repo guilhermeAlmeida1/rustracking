@@ -66,7 +66,7 @@ pub fn read_rays(filename: &str) -> Result<Vec<StraightRay>, Box<dyn std::error:
     let mut result = Vec::new();
     for line in fs::read_to_string(filename)?.lines() {
         let line_vec: Vec<_> = line.split_whitespace().collect();
-        if line_vec.len() < 3 {
+        if line_vec.len() < 6 {
             let err: Box<dyn std::error::Error> = format!(
                 "Failure to read file: {}. Line {} did not have enough parameters.",
                 filename, line
@@ -78,6 +78,11 @@ pub fn read_rays(filename: &str) -> Result<Vec<StraightRay>, Box<dyn std::error:
             energy: line_vec[0].parse()?,
             theta: line_vec[1].parse()?,
             phi: line_vec[2].parse()?,
+            origin: (
+                line_vec[3].parse()?,
+                line_vec[4].parse()?,
+                line_vec[5].parse()?,
+            ),
         });
     }
     Ok(result)

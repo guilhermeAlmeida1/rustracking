@@ -12,30 +12,37 @@ type PlotDims = (
     std::ops::Range<f64>,
 );
 
-fn at_max_radius(
+fn at_max_plottable_radius(
     ray: &StraightRay,
     plot_dims: &PlotDims,
 ) -> Result<(f64, f64, f64), Box<dyn std::error::Error>> {
     let mut result = ray.end();
     if result.0 < plot_dims.0.start {
-        result =
-            ray.at_radius((plot_dims.0.start / ray.theta.sin() / ray.phi.cos()).abs() - 0.01)?;
+        result = ray.at_radius(
+            ((plot_dims.0.start - ray.origin.0) / ray.theta.sin() / ray.phi.cos()).abs() - 0.01,
+        )?;
     }
     if result.0 > plot_dims.0.end {
-        result = ray.at_radius((plot_dims.0.end / ray.theta.sin() / ray.phi.cos()).abs() - 0.01)?;
+        result = ray.at_radius(
+            ((plot_dims.0.end - ray.origin.0) / ray.theta.sin() / ray.phi.cos()).abs() - 0.01,
+        )?;
     }
     if result.1 < plot_dims.1.start {
-        result =
-            ray.at_radius((plot_dims.1.start / ray.theta.sin() / ray.phi.sin()).abs() - 0.01)?;
+        result = ray.at_radius(
+            ((plot_dims.1.start - ray.origin.1) / ray.theta.sin() / ray.phi.sin()).abs() - 0.01,
+        )?;
     }
     if result.1 > plot_dims.1.end {
-        result = ray.at_radius((plot_dims.1.end / ray.theta.sin() / ray.phi.sin()).abs() - 0.01)?;
+        result = ray.at_radius(
+            ((plot_dims.1.end - ray.origin.1) / ray.theta.sin() / ray.phi.sin()).abs() - 0.01,
+        )?;
     }
     if result.2 < plot_dims.2.start {
-        result = ray.at_radius(plot_dims.2.start / ray.theta.cos().abs() - 0.01)?;
+        result =
+            ray.at_radius((plot_dims.2.start - ray.origin.2) / ray.theta.cos().abs() - 0.01)?;
     }
     if result.2 > plot_dims.2.end {
-        result = ray.at_radius(plot_dims.2.end / ray.theta.cos().abs() - 0.01)?;
+        result = ray.at_radius((plot_dims.2.end - ray.origin.2) / ray.theta.cos().abs() - 0.01)?;
     }
 
     Ok(result)
@@ -76,7 +83,7 @@ pub fn plot_3d(
     if let Some(rays) = rays {
         for ray in rays {
             chart.draw_series(std::iter::once(PathElement::new(
-                [(0., 0., 0.), at_max_radius(ray, &plot_dims)?],
+                [ray.origin, at_max_plottable_radius(ray, &plot_dims)?],
                 BLACK,
             )))?;
         }
@@ -157,10 +164,10 @@ pub fn plot_2d_xy(
         for ray in rays {
             chart.draw_series(std::iter::once(PathElement::new(
                 [
-                    (0., 0.),
+                    (ray.origin.0, ray.origin.1),
                     (
-                        at_max_radius(ray, &plot_dims)?.0,
-                        at_max_radius(ray, &plot_dims)?.1,
+                        at_max_plottable_radius(ray, &plot_dims)?.0,
+                        at_max_plottable_radius(ray, &plot_dims)?.1,
                     ),
                 ],
                 BLACK,
@@ -243,10 +250,10 @@ pub fn plot_2d_xz(
         for ray in rays {
             chart.draw_series(std::iter::once(PathElement::new(
                 [
-                    (0., 0.),
+                    (ray.origin.0, ray.origin.2),
                     (
-                        at_max_radius(ray, &plot_dims)?.0,
-                        at_max_radius(ray, &plot_dims)?.2,
+                        at_max_plottable_radius(ray, &plot_dims)?.0,
+                        at_max_plottable_radius(ray, &plot_dims)?.2,
                     ),
                 ],
                 BLACK,
@@ -329,10 +336,10 @@ pub fn plot_2d_yz(
         for ray in rays {
             chart.draw_series(std::iter::once(PathElement::new(
                 [
-                    (0., 0.),
+                    (ray.origin.1, ray.origin.2),
                     (
-                        at_max_radius(ray, &plot_dims)?.1,
-                        at_max_radius(ray, &plot_dims)?.2,
+                        at_max_plottable_radius(ray, &plot_dims)?.1,
+                        at_max_plottable_radius(ray, &plot_dims)?.2,
                     ),
                 ],
                 BLACK,

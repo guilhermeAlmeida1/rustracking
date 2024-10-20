@@ -16,6 +16,7 @@ pub const ENERGY_HIT_SPREAD: u64 = 3;
 pub struct StraightRay {
     pub theta: f64,
     pub phi: f64,
+    pub origin: (f64, f64, f64),
     // pub charge: f64,
     pub energy: f64,
 }
@@ -27,25 +28,29 @@ impl StraightRay {
         module: &DetectorModule,
     ) -> Option<(((f64, f64, f64), f64), PixelPosition)> {
         /*
-         * Any point along the ray can be defined as r * e_r,
+         * Any point along the ray can be defined as r * e_r + origin,
          * with: e_r = (sin(theta)cos(phi), sin(theta)sin(phi), cos(theta)),
          * and r ranging from 0 to energy / energy_loss_per_unit_distance
+         * and origin = (K,L,M)
          *
          * Any point inside a detector module can be defined as:
          * translation + rotation * (x, y, 0)
          * with x, y ranging from 0 to the module dimensions.
          *
          * This function equalizes the two, analytically solving the equation:
-         * r * e_r = translation + rotation * (x, y, 0) <=>
+         * r * e_r + origin = translation + rotation * (x, y, 0) <=>
          *
-         *     |r sin(theta)cos(phi) |     |A B 0|   |x|     |G|
-         * <=> |r sin(theta)sin(phi) |  =  |C D 0| * |y|  +  |H|
-         *     |r cos(theta)         |     |E F 0|   |0|     |I|
+         *     |r sin(theta)cos(phi) + K|     |A B 0|   |x|     |G|
+         * <=> |r sin(theta)sin(phi) + L|  =  |C D 0| * |y|  +  |H|
+         *     |r cos(theta)         + M|     |E F 0|   |0|     |I|
          *
          * see the demonstration in: misc/interset_proof.pdf
          */
         let theta = self.theta;
         let phi = self.phi;
+        let k = self.origin.0;
+        let l = self.origin.1;
+        let m = self.origin.2;
         let dims = module.dims();
         let pixel_dims = module.pixel_dims();
         let rotation = module.rotation();
@@ -59,7 +64,8 @@ impl StraightRay {
         let g = translation[0];
         let h = translation[1];
         let i = translation[2];
-        let r = ((b * e - a * f) * h + (c * f - d * e) * g + (a * d - b * c) * i)
+
+        let r = ((b * e - a * f) * (h - l) + (c * f - d * e) * (g - k) + (a * d - b * c) * (i - m))
             / (theta.cos() * (a * d - b * c)
                 + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
 
@@ -116,9 +122,9 @@ impl StraightRay {
             return Err("Radius larger than ray's reach.");
         }
         Ok((
-            r * self.theta.sin() * self.phi.cos(),
-            r * self.theta.sin() * self.phi.sin(),
-            r * self.theta.cos(),
+            r * self.theta.sin() * self.phi.cos() + self.origin.0,
+            r * self.theta.sin() * self.phi.sin() + self.origin.1,
+            r * self.theta.cos() + self.origin.2,
         ))
     }
 
@@ -226,15 +232,25 @@ impl Distribution<f64> for Exponential {
     }
 }
 
-pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributions) -> Vec<StraightRay> {
+pub fn generate_random_rays(
+    total_energy: f64,
+    min_energy: f64,
+    dist: Distributions,
+) -> Vec<StraightRay> {
     let mut result = Vec::new();
     let mut rng = rand::thread_rng();
 
     let angle_dist = rand::distributions::Uniform::new(-PI, PI);
+    let origin_dist = Gauss::new(0., 0.5);
 
     let mut current_energy = 0.;
     while current_energy < total_energy {
         let energy = dist.sample(&mut rng);
+        let origin = (
+            origin_dist.sample(&mut rng),
+            origin_dist.sample(&mut rng),
+            origin_dist.sample(&mut rng),
+        );
         current_energy += energy;
         if energy < min_energy {
             // do not store these values
@@ -242,7 +258,12 @@ pub fn generate_random_rays(total_energy: f64, min_energy: f64, dist: Distributi
         }
         let theta = angle_dist.sample(&mut rng);
         let phi = angle_dist.sample(&mut rng);
-        result.push(StraightRay { theta, phi, energy });
+        result.push(StraightRay {
+            theta,
+            phi,
+            origin,
+            energy,
+        });
     }
     result
 }
@@ -344,6 +365,7 @@ mod test {
         let ray = StraightRay {
             theta: PI / 2.,
             phi: PI / 2.,
+            origin: (0., 0., 0.),
             energy: 10.,
         };
         let result = ray.at_radius(5.).unwrap();
@@ -367,6 +389,7 @@ mod test {
         let ray = StraightRay {
             theta: PI / 2.,
             phi: 0.,
+            origin: (0., 0., 0.),
             energy: 12.,
         };
         let ((result, _), pixel) = ray.intersect(&module).unwrap();
@@ -381,6 +404,7 @@ mod test {
         let ray = StraightRay {
             theta: PI / 2.,
             phi: 0.,
+            origin: (0., 0., 0.),
             energy: 9.,
         };
         assert!(ray.intersect(&module).is_none());
@@ -388,6 +412,7 @@ mod test {
         let ray = StraightRay {
             theta: 0.,
             phi: 0.,
+            origin: (0., 0., 0.),
             energy: 10000.,
         };
         assert!(ray.intersect(&module).is_none());
@@ -398,6 +423,7 @@ mod test {
         let ray = StraightRay {
             theta: PI / 2.,
             phi: 0.,
+            origin: (0., 0., 0.),
             energy: 12.,
         };
         assert!(ray.intersect(&module).is_none());
@@ -409,6 +435,7 @@ mod test {
         let ray = StraightRay {
             theta: PI / 2.,
             phi: PI / 2.,
+            origin: (0., 0., 0.),
             energy: 12.,
         };
         let ((result, _), pixel) = ray.intersect(&module).unwrap();
@@ -427,6 +454,7 @@ mod test {
         let ray = StraightRay {
             theta: 0.,
             phi: 0.,
+            origin: (0., 0., 0.),
             energy: 12.,
         };
         let ((result, _), pixel) = ray.intersect(&module).unwrap();
@@ -437,5 +465,19 @@ mod test {
         assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
         assert_eq!(pixel, (5, 5));
+
+        let ray = StraightRay {
+            theta: 0.,
+            phi: 0.,
+            origin: (3., 3., 2.),
+            energy: 12.,
+        };
+        let ((result, _), _) = ray.intersect(&module).unwrap();
+
+        let expected = (3., 3., 10.);
+        println!("result: {:?}", result);
+        assert!((result.0 - expected.0).abs() < 10. * std::f64::EPSILON);
+        assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
+        assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
     }
 }
