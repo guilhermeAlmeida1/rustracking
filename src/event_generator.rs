@@ -135,7 +135,6 @@ impl StraightRay {
         Ok(self.energy - r * ENERGY_LOSS_PER_UNIT_DISTANCE)
     }
 
-    #[allow(unused)]
     pub fn end(&self) -> (f64, f64, f64) {
         self.at_radius(self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE)
             .unwrap()
@@ -178,12 +177,9 @@ impl StraightRay {
 }
 
 pub enum Distributions {
-    #[allow(unused)]
     Uniform(rand::distributions::Uniform<f64>),
-    #[allow(unused)]
     Gauss(Gauss),
     // Poisson(f64),
-    #[allow(unused)]
     Exponential(Exponential),
 }
 

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod clustering;
 mod detector_module;
 mod event_generator;
