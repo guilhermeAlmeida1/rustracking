@@ -10,18 +10,27 @@ use rand::Rng;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
-pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.;
+pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.; // in MeV / unit distance
 pub const ENERGY_HIT_SPREAD: u64 = 3;
 
+#[derive(Debug)]
 pub struct StraightRay {
-    pub theta: f64,
-    pub phi: f64,
+    pub theta: f64, // in radians
+    pub phi: f64,   // in radians
     pub origin: (f64, f64, f64),
-    // pub charge: f64,
-    pub energy: f64,
+    pub energy: f64, // in MeV
 }
 
 impl StraightRay {
+    pub fn new(theta: f64, phi: f64, origin: (f64, f64, f64), energy: f64) -> StraightRay {
+        StraightRay {
+            theta,
+            phi,
+            origin,
+            energy,
+        }
+    }
+
     // Returns an optional 3D point of intersection and the remaining energy of the ray at this point
     pub fn intersect(
         &self,
@@ -254,12 +263,7 @@ pub fn generate_random_rays(
         }
         let theta = angle_dist.sample(&mut rng);
         let phi = angle_dist.sample(&mut rng);
-        result.push(StraightRay {
-            theta,
-            phi,
-            origin,
-            energy,
-        });
+        result.push(StraightRay::new(theta, phi, origin, energy));
     }
     result
 }
@@ -358,12 +362,7 @@ mod test {
 
     #[test]
     fn at_radius() {
-        let ray = StraightRay {
-            theta: PI / 2.,
-            phi: PI / 2.,
-            origin: (0., 0., 0.),
-            energy: 10.,
-        };
+        let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.), 10.);
         let result = ray.at_radius(5.).unwrap();
         let expected = (0., 5., 0.);
 
@@ -382,12 +381,7 @@ mod test {
         let translation = Vector3::new(10., -5., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay {
-            theta: PI / 2.,
-            phi: 0.,
-            origin: (0., 0., 0.),
-            energy: 12.,
-        };
+        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 12.);
         let ((result, _), pixel) = ray.intersect(&module).unwrap();
 
         let expected = (10., 0., 0.);
@@ -397,43 +391,23 @@ mod test {
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
         assert_eq!(pixel, (5, 5));
 
-        let ray = StraightRay {
-            theta: PI / 2.,
-            phi: 0.,
-            origin: (0., 0., 0.),
-            energy: 9.,
-        };
+        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 9.);
         assert!(ray.intersect(&module).is_none());
 
-        let ray = StraightRay {
-            theta: 0.,
-            phi: 0.,
-            origin: (0., 0., 0.),
-            energy: 10000.,
-        };
+        let ray = StraightRay::new(0., 0., (0., 0., 0.), 10000.);
         assert!(ray.intersect(&module).is_none());
 
         let translation = Vector3::new(10., 1., 1.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay {
-            theta: PI / 2.,
-            phi: 0.,
-            origin: (0., 0., 0.),
-            energy: 12.,
-        };
+        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 12.);
         assert!(ray.intersect(&module).is_none());
 
         let rotation = Matrix3::from_angles(PI / 2., 0., 0.).unwrap(); // yconst
         let translation = Vector3::new(-5., 10., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay {
-            theta: PI / 2.,
-            phi: PI / 2.,
-            origin: (0., 0., 0.),
-            energy: 12.,
-        };
+        let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.), 12.);
         let ((result, _), pixel) = ray.intersect(&module).unwrap();
 
         let expected = (0., 10., 0.);
@@ -447,12 +421,7 @@ mod test {
         let translation = Vector3::new(-5., -5., 10.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay {
-            theta: 0.,
-            phi: 0.,
-            origin: (0., 0., 0.),
-            energy: 12.,
-        };
+        let ray = StraightRay::new(0., 0., (0., 0., 0.), 12.);
         let ((result, _), pixel) = ray.intersect(&module).unwrap();
 
         let expected = (0., 0., 10.);
@@ -462,12 +431,7 @@ mod test {
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
         assert_eq!(pixel, (5, 5));
 
-        let ray = StraightRay {
-            theta: 0.,
-            phi: 0.,
-            origin: (3., 3., 2.),
-            energy: 12.,
-        };
+        let ray = StraightRay::new(0., 0., (3., 3., 2.), 12.);
         let ((result, _), _) = ray.intersect(&module).unwrap();
 
         let expected = (3., 3., 10.);
