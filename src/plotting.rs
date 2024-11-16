@@ -4,9 +4,11 @@ use crate::event_generator::StraightRay;
 use crate::matrix::Vector3;
 use plotters::prelude::*;
 
+use crate::particle::*;
+
 use std::collections::HashMap;
 
-type PlotDims = (
+pub type Boundary = (
     std::ops::Range<f64>,
     std::ops::Range<f64>,
     std::ops::Range<f64>,
@@ -14,7 +16,7 @@ type PlotDims = (
 
 fn at_max_plottable_radius(
     ray: &StraightRay,
-    plot_dims: &PlotDims,
+    plot_dims: &Boundary,
 ) -> Result<(f64, f64, f64), Box<dyn std::error::Error>> {
     let mut result = ray.end();
     if result.0 < plot_dims.0.start {
@@ -50,12 +52,13 @@ fn at_max_plottable_radius(
 
 pub fn plot_3d(
     filename: &str,
-    plot_dims: &PlotDims,
+    plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
+    particles: Option<Vec<Particle>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -91,7 +94,7 @@ pub fn plot_3d(
         if plot_real_intersections {
             for ray in rays {
                 for (_, module) in modules {
-                    if let Some(((pos, _), _)) = ray.intersect(module) {
+                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
                         chart.plotting_area().draw(&plotters::element::Circle::new(
                             pos,
                             3,
@@ -125,6 +128,22 @@ pub fn plot_3d(
         }
     }
 
+    if let Some(mut particles) = particles {
+        for particle in &mut particles {
+            let mut points = vec![particle.ray.origin];
+            for _ in 0.. {
+                if particle.ray.energy - particle.rest_mass < 0. {
+                    break;
+                }
+                particle.do_step();
+                points.push(particle.ray.origin.clone());
+            }
+            chart
+                .draw_series(std::iter::once(PathElement::new(points, BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -134,12 +153,13 @@ pub fn plot_3d(
 
 pub fn plot_2d_xy(
     filename: &str,
-    plot_dims: &PlotDims,
+    plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
+    particles: Option<Vec<Particle>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -177,7 +197,7 @@ pub fn plot_2d_xy(
         if plot_real_intersections {
             for ray in rays {
                 for (_, module) in modules {
-                    if let Some(((pos, _), _)) = ray.intersect(module) {
+                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
                         chart.plotting_area().draw(&plotters::element::Circle::new(
                             (pos.0, pos.1),
                             3,
@@ -211,6 +231,22 @@ pub fn plot_2d_xy(
         }
     }
 
+    if let Some(mut particles) = particles {
+        for particle in &mut particles {
+            let mut points = vec![(particle.ray.origin.0, particle.ray.origin.1)];
+            for _ in 0.. {
+                if particle.ray.energy - particle.rest_mass < 0. {
+                    break;
+                }
+                particle.do_step();
+                points.push((particle.ray.origin.0, particle.ray.origin.1));
+            }
+            chart
+                .draw_series(std::iter::once(PathElement::new(points, BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -220,12 +256,13 @@ pub fn plot_2d_xy(
 
 pub fn plot_2d_xz(
     filename: &str,
-    plot_dims: &PlotDims,
+    plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
+    particles: Option<Vec<Particle>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -263,7 +300,7 @@ pub fn plot_2d_xz(
         if plot_real_intersections {
             for ray in rays {
                 for (_, module) in modules {
-                    if let Some(((pos, _), _)) = ray.intersect(module) {
+                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
                         chart.plotting_area().draw(&plotters::element::Circle::new(
                             (pos.0, pos.2),
                             3,
@@ -297,6 +334,22 @@ pub fn plot_2d_xz(
         }
     }
 
+    if let Some(mut particles) = particles {
+        for particle in &mut particles {
+            let mut points = vec![(particle.ray.origin.0, particle.ray.origin.2)];
+            for _ in 0.. {
+                if particle.ray.energy - particle.rest_mass < 0. {
+                    break;
+                }
+                particle.do_step();
+                points.push((particle.ray.origin.0, particle.ray.origin.2));
+            }
+            chart
+                .draw_series(std::iter::once(PathElement::new(points, BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -306,12 +359,13 @@ pub fn plot_2d_xz(
 
 pub fn plot_2d_yz(
     filename: &str,
-    plot_dims: &PlotDims,
+    plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
+    particles: Option<Vec<Particle>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -349,7 +403,7 @@ pub fn plot_2d_yz(
         if plot_real_intersections {
             for ray in rays {
                 for (_, module) in modules {
-                    if let Some(((pos, _), _)) = ray.intersect(module) {
+                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
                         chart.plotting_area().draw(&plotters::element::Circle::new(
                             (pos.1, pos.2),
                             3,
@@ -383,6 +437,22 @@ pub fn plot_2d_yz(
         }
     }
 
+    if let Some(mut particles) = particles {
+        for particle in &mut particles {
+            let mut points = vec![(particle.ray.origin.1, particle.ray.origin.2)];
+            for _ in 0.. {
+                if particle.ray.energy - particle.rest_mass < 0. {
+                    break;
+                }
+                particle.do_step();
+                points.push((particle.ray.origin.1, particle.ray.origin.2));
+            }
+            chart
+                .draw_series(std::iter::once(PathElement::new(points, BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -392,12 +462,13 @@ pub fn plot_2d_yz(
 
 pub fn plot_all(
     file_dir: &str,
-    plot_dims: &PlotDims,
+    plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     rays: Option<&Vec<StraightRay>>,
     plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
+    particles: Option<Vec<Particle>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename_3d = file_dir.to_string() + "/3d.svg";
     let filename_2d_xy = file_dir.to_string() + "/2d_xy.svg";
@@ -412,6 +483,7 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
+        particles.clone(),
     )?;
     plot_2d_xy(
         &filename_2d_xy,
@@ -421,6 +493,7 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
+        particles.clone(),
     )?;
     plot_2d_xz(
         &filename_2d_xz,
@@ -430,6 +503,7 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
+        particles.clone(),
     )?;
     plot_2d_yz(
         &filename_2d_yz,
@@ -439,6 +513,7 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
+        particles,
     )?;
 
     Ok(())

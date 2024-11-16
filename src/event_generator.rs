@@ -5,15 +5,20 @@
 
 use crate::clustering::Hit;
 use crate::detector_module::{DetectorModule, PixelPosition};
+use crate::particle::Particle;
+use crate::plotting::Boundary;
 use rand::distributions::Distribution;
 use rand::Rng;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 
 pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.; // in MeV / unit distance
-pub const ENERGY_HIT_SPREAD: u64 = 3;
+pub const ENERGY_HIT_SPREAD: u64 = 700; // MeV / cells
 
-#[derive(Debug)]
+// TODO:
+// galmeida: remove "energy" from here. should not be needed anywhere
+//
+#[derive(Clone, Copy, Debug)]
 pub struct StraightRay {
     pub theta: f64, // in radians
     pub phi: f64,   // in radians
@@ -35,12 +40,11 @@ impl StraightRay {
     pub fn intersect(
         &self,
         module: &DetectorModule,
-    ) -> Option<(((f64, f64, f64), f64), PixelPosition)> {
+        max_radius: f64,
+    ) -> Option<((f64, f64, f64), PixelPosition)> {
         /*
          * Any point along the ray can be defined as r * e_r + origin,
-         * with: e_r = (sin(theta)cos(phi), sin(theta)sin(phi), cos(theta)),
-         * and r ranging from 0 to energy / energy_loss_per_unit_distance
-         * and origin = (K,L,M)
+         * with: e_r = (sin(theta)cos(phi), sin(theta)sin(phi), cos(theta))
          *
          * Any point inside a detector module can be defined as:
          * translation + rotation * (x, y, 0)
@@ -78,9 +82,8 @@ impl StraightRay {
             / (theta.cos() * (a * d - b * c)
                 + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
 
-        if r > 0. {
+        if r > 0. && r < max_radius {
             if let Ok((x, y, z)) = self.at_radius(r) {
-                let energy = self.energy_at_radius(r).unwrap();
                 // Three different factorizations of the solution need to be calculated
                 // because depending on the rotation matrix up to 2 of these are
                 // invalid because they result in a division by 0
@@ -94,7 +97,7 @@ impl StraightRay {
                             (module_x * pixel_dims.0 as f64 / dims.0) as u64,
                             (module_y * pixel_dims.1 as f64 / dims.1) as u64,
                         );
-                        return Some((((x, y, z), energy), pixel_pos));
+                        return Some(((x, y, z), pixel_pos));
                     }
                 } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
                     let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
@@ -106,7 +109,7 @@ impl StraightRay {
                             (module_x * pixel_dims.0 as f64 / dims.0) as u64,
                             (module_y * pixel_dims.1 as f64 / dims.1) as u64,
                         );
-                        return Some((((x, y, z), energy), pixel_pos));
+                        return Some(((x, y, z), pixel_pos));
                     }
                 } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
                     let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
@@ -118,7 +121,7 @@ impl StraightRay {
                             (module_x * pixel_dims.0 as f64 / dims.0) as u64,
                             (module_y * pixel_dims.1 as f64 / dims.1) as u64,
                         );
-                        return Some((((x, y, z), energy), pixel_pos));
+                        return Some(((x, y, z), pixel_pos));
                     }
                 }
             }
@@ -147,41 +150,6 @@ impl StraightRay {
     pub fn end(&self) -> (f64, f64, f64) {
         self.at_radius(self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE)
             .unwrap()
-    }
-
-    pub fn create_hits<R: Rng + ?Sized>(
-        &self,
-        modules: &HashMap<u64, DetectorModule>,
-        rng: &mut R,
-    ) -> Vec<Hit> {
-        static DIST: Gauss = Gauss {
-            mean: 0.,
-            sigma: 0.15,
-        };
-
-        let mut result = Vec::new();
-        for (id, module) in modules {
-            if let Some(((_, remaining_energy), centre_pixel)) = self.intersect(module) {
-                let mut partial = Vec::new();
-                let pixel_dims = module.pixel_dims();
-                let dims = module.dims();
-                for _ in 0..1 + remaining_energy as u64 / ENERGY_HIT_SPREAD {
-                    let x = (centre_pixel.0 as f64
-                        + (DIST.sample(rng) * pixel_dims.0 as f64 / dims.0))
-                        .round() as u64;
-                    let y = (centre_pixel.1 as f64
-                        + (DIST.sample(rng) * pixel_dims.1 as f64 / dims.1))
-                        .round() as u64;
-                    let hit = Hit::new(*id, (x, y));
-                    if x >= pixel_dims.0 || y >= pixel_dims.1 || partial.contains(&hit) {
-                        continue;
-                    }
-                    partial.push(hit);
-                }
-                result.append(&mut partial);
-            }
-        }
-        result
     }
 }
 
@@ -237,18 +205,19 @@ impl Distribution<f64> for Exponential {
     }
 }
 
-pub fn generate_random_rays(
+pub fn generate_random_particles(
     total_energy: f64,
     min_energy: f64,
     dist: Distributions,
-) -> Vec<StraightRay> {
+) -> Result<Vec<Particle>, &'static str> {
     let mut result = Vec::new();
     let mut rng = rand::thread_rng();
 
     let angle_dist = rand::distributions::Uniform::new(-PI, PI);
-    let origin_dist = Gauss::new(0., 0.5);
+    let origin_dist = Gauss::new(0., 0.1);
 
     let mut current_energy = 0.;
+    let mut switch = false;
     while current_energy < total_energy {
         let energy = dist.sample(&mut rng);
         let origin = (
@@ -257,22 +226,70 @@ pub fn generate_random_rays(
             origin_dist.sample(&mut rng),
         );
         current_energy += energy;
-        if energy < min_energy {
+        if energy < crate::particle::PROTON_REST_MASS {
             // do not store these values
             continue;
         }
         let theta = angle_dist.sample(&mut rng);
         let phi = angle_dist.sample(&mut rng);
-        result.push(StraightRay::new(theta, phi, origin, energy));
+        let ray = StraightRay::new(theta, phi, origin, energy);
+        if switch {
+            result.push(Particle::new_electron(ray)?);
+        } else {
+            result.push(Particle::new_proton(ray)?);
+        }
+        switch = !switch;
     }
-    result
+    Ok(result)
 }
 
-pub fn create_hits(rays: &Vec<StraightRay>, modules: &HashMap<u64, DetectorModule>) -> Vec<Hit> {
-    let mut hits = Vec::new();
+pub fn create_hits(
+    mut particles: Vec<Particle>,
+    modules: &HashMap<u64, DetectorModule>,
+    bounds: &Boundary,
+) -> Vec<Hit> {
+    static DIST: Gauss = Gauss {
+        mean: 0.,
+        sigma: 0.15,
+    };
     let mut rng = rand::thread_rng();
-    for ray in rays {
-        hits.append(&mut ray.create_hits(modules, &mut rng));
+
+    let mut hits = Vec::new();
+    for particle in &mut particles {
+        while particle.validate_energy() {
+            for (id, module) in modules {
+                if let Some((_, centre_pixel)) = particle.intersect(module) {
+                    let mut partial = Vec::new();
+                    let pixel_dims = module.pixel_dims();
+                    let dims = module.dims();
+                    for _ in 0..1 + particle.ray.energy as u64 / ENERGY_HIT_SPREAD {
+                        let x = (centre_pixel.0 as f64
+                            + (DIST.sample(&mut rng) * pixel_dims.0 as f64 / dims.0))
+                            .round() as u64;
+                        let y = (centre_pixel.1 as f64
+                            + (DIST.sample(&mut rng) * pixel_dims.1 as f64 / dims.1))
+                            .round() as u64;
+                        let hit = Hit::new(*id, (x, y));
+                        if x >= pixel_dims.0 || y >= pixel_dims.1 || partial.contains(&hit) {
+                            continue;
+                        }
+                        partial.push(hit);
+                    }
+                    hits.append(&mut partial);
+                }
+            }
+            particle.do_step();
+        }
+        let origin = particle.ray.origin;
+        if origin.0 < bounds.0.start || origin.0 > bounds.0.end {
+            continue;
+        }
+        if origin.1 < bounds.1.start || origin.1 > bounds.1.end {
+            continue;
+        }
+        if origin.2 < bounds.2.start || origin.2 > bounds.2.end {
+            continue;
+        }
     }
     hits
 }
@@ -282,10 +299,11 @@ pub fn generate_random_event(
     min_energy: f64,
     dist: Distributions,
     modules: &HashMap<u64, DetectorModule>,
-) -> (Vec<StraightRay>, Vec<Hit>) {
-    let rays = generate_random_rays(total_energy, min_energy, dist);
-    let hits = create_hits(&rays, modules);
-    (rays, hits)
+    bounds: &Boundary,
+) -> Result<(Vec<Particle>, Vec<Hit>), &'static str> {
+    let particles = generate_random_particles(total_energy, min_energy, dist)?;
+    let hits = create_hits(particles.clone(), modules, bounds);
+    Ok((particles, hits))
 }
 
 #[cfg(test)]
@@ -382,7 +400,7 @@ mod test {
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 12.);
-        let ((result, _), pixel) = ray.intersect(&module).unwrap();
+        let (result, pixel) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (10., 0., 0.);
         println!("result: {:?}", result);
@@ -392,23 +410,23 @@ mod test {
         assert_eq!(pixel, (5, 5));
 
         let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 9.);
-        assert!(ray.intersect(&module).is_none());
+        assert!(ray.intersect(&module, std::f64::MAX).is_none());
 
         let ray = StraightRay::new(0., 0., (0., 0., 0.), 10000.);
-        assert!(ray.intersect(&module).is_none());
+        assert!(ray.intersect(&module, std::f64::MAX).is_none());
 
         let translation = Vector3::new(10., 1., 1.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 12.);
-        assert!(ray.intersect(&module).is_none());
+        assert!(ray.intersect(&module, std::f64::MAX).is_none());
 
         let rotation = Matrix3::from_angles(PI / 2., 0., 0.).unwrap(); // yconst
         let translation = Vector3::new(-5., 10., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.), 12.);
-        let ((result, _), pixel) = ray.intersect(&module).unwrap();
+        let (result, pixel) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (0., 10., 0.);
         println!("result: {:?}", result);
@@ -422,7 +440,7 @@ mod test {
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
         let ray = StraightRay::new(0., 0., (0., 0., 0.), 12.);
-        let ((result, _), pixel) = ray.intersect(&module).unwrap();
+        let (result, pixel) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (0., 0., 10.);
         println!("result: {:?}", result);
@@ -432,7 +450,7 @@ mod test {
         assert_eq!(pixel, (5, 5));
 
         let ray = StraightRay::new(0., 0., (3., 3., 2.), 12.);
-        let ((result, _), _) = ray.intersect(&module).unwrap();
+        let (result, _) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (3., 3., 10.);
         println!("result: {:?}", result);
