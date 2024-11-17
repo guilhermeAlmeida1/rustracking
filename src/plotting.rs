@@ -260,7 +260,13 @@ pub fn plot_2d_xy(
     if let Some(particles_as_points) = particles_as_points {
         for points_vec in particles_as_points {
             chart
-                .draw_series(std::iter::once(PathElement::new(points_vec.into_iter().map(|itr| {(itr.0, itr.1)}).collect::<Vec<_>>(), BLUE)))
+                .draw_series(std::iter::once(PathElement::new(
+                    points_vec
+                        .into_iter()
+                        .map(|itr| (itr.0, itr.1))
+                        .collect::<Vec<_>>(),
+                    BLUE,
+                )))
                 .unwrap();
         }
     }
@@ -372,7 +378,13 @@ pub fn plot_2d_xz(
     if let Some(particles_as_points) = particles_as_points {
         for points_vec in particles_as_points {
             chart
-                .draw_series(std::iter::once(PathElement::new(points_vec.into_iter().map(|itr| {(itr.0, itr.2)}).collect::<Vec<_>>(), BLUE)))
+                .draw_series(std::iter::once(PathElement::new(
+                    points_vec
+                        .into_iter()
+                        .map(|itr| (itr.0, itr.2))
+                        .collect::<Vec<_>>(),
+                    BLUE,
+                )))
                 .unwrap();
         }
     }
@@ -484,7 +496,13 @@ pub fn plot_2d_yz(
     if let Some(particles_as_points) = particles_as_points {
         for points_vec in particles_as_points {
             chart
-                .draw_series(std::iter::once(PathElement::new(points_vec.into_iter().map(|itr| {(itr.1, itr.2)}).collect::<Vec<_>>(), BLUE)))
+                .draw_series(std::iter::once(PathElement::new(
+                    points_vec
+                        .into_iter()
+                        .map(|itr| (itr.1, itr.2))
+                        .collect::<Vec<_>>(),
+                    BLUE,
+                )))
                 .unwrap();
         }
     }

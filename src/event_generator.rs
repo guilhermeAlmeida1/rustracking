@@ -13,7 +13,7 @@ use std::collections::HashMap;
 use std::f64::consts::PI;
 
 pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.; // in MeV / unit distance
-pub const ENERGY_HIT_SPREAD: u64 = 700; // MeV / cells
+const ENERGY_HIT_FACTOR: f64 = 700.; // in MeV
 
 // TODO:
 // galmeida: remove "energy" from here. should not be needed anywhere
@@ -216,6 +216,8 @@ pub fn generate_random_particles(
     let angle_dist = rand::distributions::Uniform::new(-PI, PI);
     let origin_dist = Gauss::new(0., 0.1);
 
+    let min_energy = min_energy.min(crate::particle::PROTON_REST_MASS);
+
     let mut current_energy = 0.;
     let mut switch = false;
     while current_energy < total_energy {
@@ -226,8 +228,7 @@ pub fn generate_random_particles(
             origin_dist.sample(&mut rng),
         );
         current_energy += energy;
-        if energy < crate::particle::PROTON_REST_MASS {
-            // do not store these values
+        if energy < min_energy {
             continue;
         }
         let theta = angle_dist.sample(&mut rng);
@@ -262,7 +263,9 @@ pub fn create_hits(
                     let mut partial = Vec::new();
                     let pixel_dims = module.pixel_dims();
                     let dims = module.dims();
-                    for _ in 0..1 + particle.ray.energy as u64 / ENERGY_HIT_SPREAD {
+                    let num_hits =
+                        1 + (5. * (1. - f64::exp(-particle.ray.energy / ENERGY_HIT_FACTOR))) as u64;
+                    for _ in 0..num_hits {
                         let x = (centre_pixel.0 as f64
                             + (DIST.sample(&mut rng) * pixel_dims.0 as f64 / dims.0))
                             .round() as u64;
