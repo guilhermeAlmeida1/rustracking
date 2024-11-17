@@ -71,9 +71,9 @@ pub fn write_particles(
             particle.energy,
             particle.ray.theta,
             particle.ray.phi,
-            particle.ray.origin.0,
-            particle.ray.origin.1,
-            particle.ray.origin.2,
+            particle.ray.origin[0],
+            particle.ray.origin[1],
+            particle.ray.origin[2],
         ))?;
     }
     Ok(())

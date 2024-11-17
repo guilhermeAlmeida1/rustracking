@@ -5,7 +5,7 @@ pub fn assert_near<T: PartialOrd + std::ops::Sub<Output = T> + Copy + std::fmt::
 ) -> () {
     let diff = if lhs > rhs { lhs - rhs } else { rhs - lhs };
     if diff > epsilon {
-        println!("ERROR: assert_near({lhs}, {rhs}, {epsilon} failed.");
+        println!("ERROR: assert_near({lhs}, {rhs}, {epsilon}) failed.");
         println!("       diff = {diff}");
         assert!(false)
     }

@@ -1,17 +1,21 @@
+use crate::matrix::Vector3;
+
 pub trait Field {
-    fn at(&self, pos: [f64; 3]) -> [f64; 3];
+    fn at(&self, pos: Vector3<f64>) -> Vector3<f64>;
 }
 
 pub struct ConstantField {
-    pub field: [f64; 3],
+    pub field: Vector3<f64>,
 }
 impl Field for ConstantField {
-    fn at(&self, _: [f64; 3]) -> [f64; 3] {
+    fn at(&self, _: Vector3<f64>) -> Vector3<f64> {
         self.field
     }
 }
 impl ConstantField {
     pub const fn new(x: f64, y: f64, z: f64) -> Self {
-        Self { field: [x, y, z] }
+        Self {
+            field: Vector3::new(x, y, z),
+        }
     }
 }

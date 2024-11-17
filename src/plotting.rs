@@ -69,13 +69,21 @@ pub fn plot_3d(
 
     if let Some(mut particles) = particles {
         for particle in &mut particles {
-            let mut points = vec![particle.ray.origin];
+            let mut points = vec![(
+                particle.ray.origin[0],
+                particle.ray.origin[1],
+                particle.ray.origin[2],
+            )];
             for _ in 0.. {
                 if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
-                points.push(particle.ray.origin.clone());
+                points.push((
+                    particle.ray.origin[0],
+                    particle.ray.origin[1],
+                    particle.ray.origin[2],
+                ));
             }
             chart
                 .draw_series(std::iter::once(PathElement::new(points, BLUE)))
@@ -150,13 +158,13 @@ pub fn plot_2d_xy(
 
     if let Some(mut particles) = particles {
         for particle in &mut particles {
-            let mut points = vec![(particle.ray.origin.0, particle.ray.origin.1)];
+            let mut points = vec![(particle.ray.origin[0], particle.ray.origin[1])];
             for _ in 0.. {
                 if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
-                points.push((particle.ray.origin.0, particle.ray.origin.1));
+                points.push((particle.ray.origin[0], particle.ray.origin[1]));
             }
             chart
                 .draw_series(std::iter::once(PathElement::new(points, BLUE)))
@@ -237,13 +245,13 @@ pub fn plot_2d_xz(
 
     if let Some(mut particles) = particles {
         for particle in &mut particles {
-            let mut points = vec![(particle.ray.origin.0, particle.ray.origin.2)];
+            let mut points = vec![(particle.ray.origin[0], particle.ray.origin[2])];
             for _ in 0.. {
                 if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
-                points.push((particle.ray.origin.0, particle.ray.origin.2));
+                points.push((particle.ray.origin[0], particle.ray.origin[2]));
             }
             chart
                 .draw_series(std::iter::once(PathElement::new(points, BLUE)))
@@ -324,13 +332,13 @@ pub fn plot_2d_yz(
 
     if let Some(mut particles) = particles {
         for particle in &mut particles {
-            let mut points = vec![(particle.ray.origin.1, particle.ray.origin.2)];
+            let mut points = vec![(particle.ray.origin[1], particle.ray.origin[2])];
             for _ in 0.. {
                 if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
-                points.push((particle.ray.origin.1, particle.ray.origin.2));
+                points.push((particle.ray.origin[1], particle.ray.origin[2]));
             }
             chart
                 .draw_series(std::iter::once(PathElement::new(points, BLUE)))
@@ -376,13 +384,21 @@ pub fn plot_all(
 
     if let Some(mut particles) = particles {
         for particle in &mut particles {
-            let mut points = vec![particle.ray.origin];
+            let mut points = vec![(
+                particle.ray.origin[0],
+                particle.ray.origin[1],
+                particle.ray.origin[2],
+            )];
             for _ in 0.. {
                 if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
-                points.push(particle.ray.origin);
+                points.push((
+                    particle.ray.origin[0],
+                    particle.ray.origin[1],
+                    particle.ray.origin[2],
+                ));
             }
             particles_as_points.push(points);
         }

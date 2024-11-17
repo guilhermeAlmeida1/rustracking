@@ -82,7 +82,7 @@ pub fn read_particles(filename: &str) -> Result<Vec<Particle>, Box<dyn std::erro
             StraightRay::new(
                 line_vec[3].parse()?,
                 line_vec[4].parse()?,
-                (
+                Vector3::new(
                     line_vec[5].parse()?,
                     line_vec[6].parse()?,
                     line_vec[7].parse()?,
