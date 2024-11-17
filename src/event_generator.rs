@@ -188,8 +188,6 @@ pub fn generate_random_particles(
     let angle_dist = rand::distributions::Uniform::new(-PI, PI);
     let origin_dist = Gauss::new(0., 0.1);
 
-    let min_energy = min_energy.min(crate::particle::PROTON_REST_MASS);
-
     let mut current_energy = 0.;
     let mut switch = false;
     while current_energy < total_energy {
