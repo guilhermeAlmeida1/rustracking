@@ -59,6 +59,7 @@ pub fn plot_3d(
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
+    particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -144,6 +145,14 @@ pub fn plot_3d(
         }
     }
 
+    if let Some(particles_as_points) = particles_as_points {
+        for points_vec in particles_as_points {
+            chart
+                .draw_series(std::iter::once(PathElement::new(points_vec.clone(), BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -160,6 +169,7 @@ pub fn plot_2d_xy(
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
+    particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -247,6 +257,14 @@ pub fn plot_2d_xy(
         }
     }
 
+    if let Some(particles_as_points) = particles_as_points {
+        for points_vec in particles_as_points {
+            chart
+                .draw_series(std::iter::once(PathElement::new(points_vec.into_iter().map(|itr| {(itr.0, itr.1)}).collect::<Vec<_>>(), BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -263,6 +281,7 @@ pub fn plot_2d_xz(
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
+    particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -350,6 +369,14 @@ pub fn plot_2d_xz(
         }
     }
 
+    if let Some(particles_as_points) = particles_as_points {
+        for points_vec in particles_as_points {
+            chart
+                .draw_series(std::iter::once(PathElement::new(points_vec.into_iter().map(|itr| {(itr.0, itr.2)}).collect::<Vec<_>>(), BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -366,6 +393,7 @@ pub fn plot_2d_yz(
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
+    particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -453,6 +481,14 @@ pub fn plot_2d_yz(
         }
     }
 
+    if let Some(particles_as_points) = particles_as_points {
+        for points_vec in particles_as_points {
+            chart
+                .draw_series(std::iter::once(PathElement::new(points_vec.into_iter().map(|itr| {(itr.1, itr.2)}).collect::<Vec<_>>(), BLUE)))
+                .unwrap();
+        }
+    }
+
     // To avoid the IO failure being ignored silently, we manually call the present function
     root.present().expect("Unable to write result to file, please make sure 'plotters-doc-data' dir exists under current dir");
     println!("Saved output to file: {}", filename);
@@ -475,6 +511,22 @@ pub fn plot_all(
     let filename_2d_xz = file_dir.to_string() + "/2d_xz.svg";
     let filename_2d_yz = file_dir.to_string() + "/2d_yz.svg";
 
+    let mut particles_as_points = Vec::new();
+
+    if let Some(mut particles) = particles {
+        for particle in &mut particles {
+            let mut points = vec![particle.ray.origin];
+            for _ in 0.. {
+                if particle.ray.energy - particle.rest_mass < 0. {
+                    break;
+                }
+                particle.do_step();
+                points.push(particle.ray.origin);
+            }
+            particles_as_points.push(points);
+        }
+    }
+
     plot_3d(
         &filename_3d,
         plot_dims,
@@ -483,7 +535,8 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
-        particles.clone(),
+        None,
+        Some(&particles_as_points),
     )?;
     plot_2d_xy(
         &filename_2d_xy,
@@ -493,7 +546,8 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
-        particles.clone(),
+        None,
+        Some(&particles_as_points),
     )?;
     plot_2d_xz(
         &filename_2d_xz,
@@ -503,7 +557,8 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
-        particles.clone(),
+        None,
+        Some(&particles_as_points),
     )?;
     plot_2d_yz(
         &filename_2d_yz,
@@ -513,7 +568,8 @@ pub fn plot_all(
         plot_real_intersections,
         hits,
         clustered_points,
-        particles,
+        None,
+        Some(&particles_as_points),
     )?;
 
     Ok(())
