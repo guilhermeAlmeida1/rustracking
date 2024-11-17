@@ -79,15 +79,22 @@ fn mult_scalar(a: [f64; 3], b: f64) -> [f64; 3] {
 pub struct Particle {
     pub charge: f64,
     pub rest_mass: f64,
+    pub energy: f64,
     pub ray: StraightRay,
     velocity_cartesian: [f64; 3],
 }
 
 impl Particle {
-    pub fn new(charge: f64, rest_mass: f64, ray: StraightRay) -> Result<Particle, &'static str> {
+    pub fn new(
+        charge: f64,
+        rest_mass: f64,
+        energy: f64,
+        ray: StraightRay,
+    ) -> Result<Particle, &'static str> {
         let mut result = Self {
             charge,
             rest_mass,
+            energy,
             ray,
             velocity_cartesian: [0., 0., 0.],
         };
@@ -98,21 +105,21 @@ impl Particle {
         Ok(result)
     }
 
-    pub fn new_electron(ray: StraightRay) -> Result<Particle, &'static str> {
-        Self::new(ELECTRON_CHARGE, ELECTRON_REST_MASS, ray)
+    pub fn new_electron(energy: f64, ray: StraightRay) -> Result<Particle, &'static str> {
+        Self::new(ELECTRON_CHARGE, ELECTRON_REST_MASS, energy, ray)
     }
 
-    pub fn new_proton(ray: StraightRay) -> Result<Particle, &'static str> {
-        Self::new(PROTON_CHARGE, PROTON_REST_MASS, ray)
+    pub fn new_proton(energy: f64, ray: StraightRay) -> Result<Particle, &'static str> {
+        Self::new(PROTON_CHARGE, PROTON_REST_MASS, energy, ray)
     }
 
     pub fn validate_energy(&self) -> bool {
-        self.ray.energy >= self.rest_mass
+        self.energy >= self.rest_mass
     }
 
     // in MeV/c
     pub fn abs_momentum(&self) -> f64 {
-        f64::sqrt(self.ray.energy.powi(2) - (self.rest_mass).powi(2))
+        f64::sqrt(self.energy.powi(2) - (self.rest_mass).powi(2))
     }
 
     // in c
@@ -145,7 +152,7 @@ impl Particle {
 
         self.ray.theta = new_vel_polar[1];
         self.ray.phi = new_vel_polar[2];
-        self.ray.energy -= ENERGY_LOSS_PER_SECOND * STEP_TIME;
+        self.energy -= ENERGY_LOSS_PER_SECOND * STEP_TIME;
     }
 
     fn step_distance(&self) -> f64 {
@@ -163,7 +170,7 @@ mod test {
     use crate::utils::assert_near;
 
     fn _new_basic_proton(energy: f64) -> Result<Particle, &'static str> {
-        Particle::new_proton(StraightRay::new(0., 0., (0., 0., 0.), energy))
+        Particle::new_proton(energy, StraightRay::new(0., 0., (0., 0., 0.)))
     }
 
     #[test]
@@ -171,7 +178,7 @@ mod test {
         let particle = _new_basic_proton(5000.).unwrap();
         assert_near(particle.charge, PROTON_CHARGE, 0.1);
         assert_near(particle.rest_mass, PROTON_REST_MASS, 0.1);
-        assert_near(particle.ray.energy, 5000., 0.1);
+        assert_near(particle.energy, 5000., 0.1);
     }
 
     #[test]

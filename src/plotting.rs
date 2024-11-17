@@ -71,7 +71,7 @@ pub fn plot_3d(
         for particle in &mut particles {
             let mut points = vec![particle.ray.origin];
             for _ in 0.. {
-                if particle.ray.energy - particle.rest_mass < 0. {
+                if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
@@ -152,7 +152,7 @@ pub fn plot_2d_xy(
         for particle in &mut particles {
             let mut points = vec![(particle.ray.origin.0, particle.ray.origin.1)];
             for _ in 0.. {
-                if particle.ray.energy - particle.rest_mass < 0. {
+                if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
@@ -239,7 +239,7 @@ pub fn plot_2d_xz(
         for particle in &mut particles {
             let mut points = vec![(particle.ray.origin.0, particle.ray.origin.2)];
             for _ in 0.. {
-                if particle.ray.energy - particle.rest_mass < 0. {
+                if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
@@ -326,7 +326,7 @@ pub fn plot_2d_yz(
         for particle in &mut particles {
             let mut points = vec![(particle.ray.origin.1, particle.ray.origin.2)];
             for _ in 0.. {
-                if particle.ray.energy - particle.rest_mass < 0. {
+                if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
@@ -378,7 +378,7 @@ pub fn plot_all(
         for particle in &mut particles {
             let mut points = vec![particle.ray.origin];
             for _ in 0.. {
-                if particle.ray.energy - particle.rest_mass < 0. {
+                if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();

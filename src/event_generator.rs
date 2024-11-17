@@ -15,28 +15,19 @@ use std::f64::consts::PI;
 pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.; // in MeV / unit distance
 const ENERGY_HIT_FACTOR: f64 = 700.; // in MeV
 
-// TODO:
-// galmeida: remove "energy" from here. should not be needed anywhere
-//
 #[derive(Clone, Copy, Debug)]
 pub struct StraightRay {
     pub theta: f64, // in radians
     pub phi: f64,   // in radians
     pub origin: (f64, f64, f64),
-    pub energy: f64, // in MeV
 }
 
 impl StraightRay {
-    pub fn new(theta: f64, phi: f64, origin: (f64, f64, f64), energy: f64) -> StraightRay {
-        StraightRay {
-            theta,
-            phi,
-            origin,
-            energy,
-        }
+    pub fn new(theta: f64, phi: f64, origin: (f64, f64, f64)) -> StraightRay {
+        StraightRay { theta, phi, origin }
     }
 
-    // Returns an optional 3D point of intersection and the remaining energy of the ray at this point
+    // Returns a 3D point of intersection between the ray and the module
     pub fn intersect(
         &self,
         module: &DetectorModule,
@@ -83,73 +74,54 @@ impl StraightRay {
                 + theta.sin() * ((c * f - d * e) * phi.cos() + (b * e - a * f) * phi.sin()));
 
         if r > 0. && r < max_radius {
-            if let Ok((x, y, z)) = self.at_radius(r) {
-                // Three different factorizations of the solution need to be calculated
-                // because depending on the rotation matrix up to 2 of these are
-                // invalid because they result in a division by 0
-                if (a * d - b * c - 0.).abs() > 10. * std::f64::EPSILON {
-                    let module_x = (d * (x - g) + b * (h - y)) / (a * d - b * c);
-                    let module_y = (c * (x - g) + a * (h - y)) / (b * c - a * d);
+            let (x, y, z) = self.at_radius(r);
+            // Three different factorizations of the solution need to be calculated
+            // because depending on the rotation matrix up to 2 of these are
+            // invalid because they result in a division by 0
+            if (a * d - b * c - 0.).abs() > 10. * std::f64::EPSILON {
+                let module_x = (d * (x - g) + b * (h - y)) / (a * d - b * c);
+                let module_y = (c * (x - g) + a * (h - y)) / (b * c - a * d);
 
-                    if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1
-                    {
-                        let pixel_pos = (
-                            (module_x * pixel_dims.0 as f64 / dims.0) as u64,
-                            (module_y * pixel_dims.1 as f64 / dims.1) as u64,
-                        );
-                        return Some(((x, y, z), pixel_pos));
-                    }
-                } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
-                    let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
-                    let module_y = (e * (x - g) + a * (i - z)) / (b * e - a * f);
+                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
+                    let pixel_pos = (
+                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                    );
+                    return Some(((x, y, z), pixel_pos));
+                }
+            } else if (a * f - b * e - 0.).abs() > 10. * std::f64::EPSILON {
+                let module_x = (f * (x - g) + b * (i - z)) / (a * f - b * e);
+                let module_y = (e * (x - g) + a * (i - z)) / (b * e - a * f);
 
-                    if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1
-                    {
-                        let pixel_pos = (
-                            (module_x * pixel_dims.0 as f64 / dims.0) as u64,
-                            (module_y * pixel_dims.1 as f64 / dims.1) as u64,
-                        );
-                        return Some(((x, y, z), pixel_pos));
-                    }
-                } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
-                    let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
-                    let module_y = (e * (y - h) + c * (i - z)) / (d * e - c * f);
+                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
+                    let pixel_pos = (
+                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                    );
+                    return Some(((x, y, z), pixel_pos));
+                }
+            } else if (c * f - d * e - 0.).abs() > 10. * std::f64::EPSILON {
+                let module_x = (f * (y - h) + d * (i - z)) / (c * f - d * e);
+                let module_y = (e * (y - h) + c * (i - z)) / (d * e - c * f);
 
-                    if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1
-                    {
-                        let pixel_pos = (
-                            (module_x * pixel_dims.0 as f64 / dims.0) as u64,
-                            (module_y * pixel_dims.1 as f64 / dims.1) as u64,
-                        );
-                        return Some(((x, y, z), pixel_pos));
-                    }
+                if module_x >= 0. && module_x <= dims.0 && module_y >= 0. && module_y <= dims.1 {
+                    let pixel_pos = (
+                        (module_x * pixel_dims.0 as f64 / dims.0) as u64,
+                        (module_y * pixel_dims.1 as f64 / dims.1) as u64,
+                    );
+                    return Some(((x, y, z), pixel_pos));
                 }
             }
         }
         None
     }
 
-    pub fn at_radius(&self, r: f64) -> Result<(f64, f64, f64), &'static str> {
-        if r > self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE {
-            return Err("Radius larger than ray's reach.");
-        }
-        Ok((
+    pub fn at_radius(&self, r: f64) -> (f64, f64, f64) {
+        (
             r * self.theta.sin() * self.phi.cos() + self.origin.0,
             r * self.theta.sin() * self.phi.sin() + self.origin.1,
             r * self.theta.cos() + self.origin.2,
-        ))
-    }
-
-    pub fn energy_at_radius(&self, r: f64) -> Result<f64, &'static str> {
-        if r > self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE {
-            return Err("Radius larger than ray's reach.");
-        }
-        Ok(self.energy - r * ENERGY_LOSS_PER_UNIT_DISTANCE)
-    }
-
-    pub fn end(&self) -> (f64, f64, f64) {
-        self.at_radius(self.energy / ENERGY_LOSS_PER_UNIT_DISTANCE)
-            .unwrap()
+        )
     }
 }
 
@@ -233,11 +205,11 @@ pub fn generate_random_particles(
         }
         let theta = angle_dist.sample(&mut rng);
         let phi = angle_dist.sample(&mut rng);
-        let ray = StraightRay::new(theta, phi, origin, energy);
+        let ray = StraightRay::new(theta, phi, origin);
         if switch {
-            result.push(Particle::new_electron(ray)?);
+            result.push(Particle::new_electron(energy, ray)?);
         } else {
-            result.push(Particle::new_proton(ray)?);
+            result.push(Particle::new_proton(energy, ray)?);
         }
         switch = !switch;
     }
@@ -264,7 +236,7 @@ pub fn create_hits(
                     let pixel_dims = module.pixel_dims();
                     let dims = module.dims();
                     let num_hits =
-                        1 + (5. * (1. - f64::exp(-particle.ray.energy / ENERGY_HIT_FACTOR))) as u64;
+                        1 + (5. * (1. - f64::exp(-particle.energy / ENERGY_HIT_FACTOR))) as u64;
                     for _ in 0..num_hits {
                         let x = (centre_pixel.0 as f64
                             + (DIST.sample(&mut rng) * pixel_dims.0 as f64 / dims.0))
@@ -383,17 +355,13 @@ mod test {
 
     #[test]
     fn at_radius() {
-        let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.), 10.);
-        let result = ray.at_radius(5.).unwrap();
+        let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.));
+        let result = ray.at_radius(5.);
         let expected = (0., 5., 0.);
 
         assert!((result.0 - expected.0).abs() < 10. * std::f64::EPSILON);
         assert!((result.1 - expected.1).abs() < 10. * std::f64::EPSILON);
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
-
-        assert!(ray
-            .at_radius(ray.energy / ENERGY_LOSS_PER_UNIT_DISTANCE + 1.)
-            .is_err());
     }
 
     #[test]
@@ -402,7 +370,7 @@ mod test {
         let translation = Vector3::new(10., -5., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 12.);
+        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.));
         let (result, pixel) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (10., 0., 0.);
@@ -412,23 +380,23 @@ mod test {
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
         assert_eq!(pixel, (5, 5));
 
-        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 9.);
-        assert!(ray.intersect(&module, std::f64::MAX).is_none());
+        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.));
+        assert!(ray.intersect(&module, 9.).is_none());
 
-        let ray = StraightRay::new(0., 0., (0., 0., 0.), 10000.);
+        let ray = StraightRay::new(0., 0., (0., 0., 0.));
         assert!(ray.intersect(&module, std::f64::MAX).is_none());
 
         let translation = Vector3::new(10., 1., 1.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.), 12.);
+        let ray = StraightRay::new(PI / 2., 0., (0., 0., 0.));
         assert!(ray.intersect(&module, std::f64::MAX).is_none());
 
         let rotation = Matrix3::from_angles(PI / 2., 0., 0.).unwrap(); // yconst
         let translation = Vector3::new(-5., 10., -5.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.), 12.);
+        let ray = StraightRay::new(PI / 2., PI / 2., (0., 0., 0.));
         let (result, pixel) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (0., 10., 0.);
@@ -442,7 +410,7 @@ mod test {
         let translation = Vector3::new(-5., -5., 10.);
         let module = DetectorModule::new((10., 10.), (10, 10), translation, rotation).unwrap();
 
-        let ray = StraightRay::new(0., 0., (0., 0., 0.), 12.);
+        let ray = StraightRay::new(0., 0., (0., 0., 0.));
         let (result, pixel) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (0., 0., 10.);
@@ -452,7 +420,7 @@ mod test {
         assert!((result.2 - expected.2).abs() < 10. * std::f64::EPSILON);
         assert_eq!(pixel, (5, 5));
 
-        let ray = StraightRay::new(0., 0., (3., 3., 2.), 12.);
+        let ray = StraightRay::new(0., 0., (3., 3., 2.));
         let (result, _) = ray.intersect(&module, std::f64::MAX).unwrap();
 
         let expected = (3., 3., 10.);
