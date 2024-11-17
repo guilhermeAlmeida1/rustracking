@@ -30,7 +30,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(5000., 2500.));
     let (particles, hits) =
-        event_generator::generate_random_event(30000., 0., dist, &modules, &plot_dims)?;
+        event_generator::generate_random_event(30000., crate::particle::PROTON_REST_MASS, dist, &modules, &plot_dims)?;
 
     // file_writer::write_rays(RAYS_FILE_NAME, &rays)?;
     // file_writer::write_hits(HITS_FILE_NAME, &hits)?;
@@ -46,14 +46,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // // }];
     // // let hits = event_generator::create_hits(&rays, &modules);
 
-    // let points = clustering::clustering(&modules, &hits)?;
+    let points = clustering::clustering(&modules, &hits)?;
 
     plotting::plot_all(
         "data/magfield",
         &plot_dims,
         &modules,
-        Some(&hits),
         None,
+        Some(&points),
         Some(particles.clone()),
     )?;
 
