@@ -52,8 +52,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "data/magfield",
         &plot_dims,
         &modules,
-        None,
-        false,
         Some(&hits),
         None,
         Some(particles.clone()),

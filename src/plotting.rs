@@ -1,6 +1,5 @@
 use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
-use crate::event_generator::StraightRay;
 use crate::matrix::Vector3;
 use plotters::prelude::*;
 
@@ -14,48 +13,10 @@ pub type Boundary = (
     std::ops::Range<f64>,
 );
 
-fn at_max_plottable_radius(
-    ray: &StraightRay,
-    plot_dims: &Boundary,
-) -> Result<(f64, f64, f64), Box<dyn std::error::Error>> {
-    let mut result = ray.end();
-    if result.0 < plot_dims.0.start {
-        result = ray.at_radius(
-            ((plot_dims.0.start - ray.origin.0) / ray.theta.sin() / ray.phi.cos()).abs() - 0.01,
-        )?;
-    }
-    if result.0 > plot_dims.0.end {
-        result = ray.at_radius(
-            ((plot_dims.0.end - ray.origin.0) / ray.theta.sin() / ray.phi.cos()).abs() - 0.01,
-        )?;
-    }
-    if result.1 < plot_dims.1.start {
-        result = ray.at_radius(
-            ((plot_dims.1.start - ray.origin.1) / ray.theta.sin() / ray.phi.sin()).abs() - 0.01,
-        )?;
-    }
-    if result.1 > plot_dims.1.end {
-        result = ray.at_radius(
-            ((plot_dims.1.end - ray.origin.1) / ray.theta.sin() / ray.phi.sin()).abs() - 0.01,
-        )?;
-    }
-    if result.2 < plot_dims.2.start {
-        result =
-            ray.at_radius((plot_dims.2.start - ray.origin.2) / ray.theta.cos().abs() - 0.01)?;
-    }
-    if result.2 > plot_dims.2.end {
-        result = ray.at_radius((plot_dims.2.end - ray.origin.2) / ray.theta.cos().abs() - 0.01)?;
-    }
-
-    Ok(result)
-}
-
 pub fn plot_3d(
     filename: &str,
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<StraightRay>>,
-    plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
@@ -82,29 +43,6 @@ pub fn plot_3d(
         // verts.push(verts[0]);
 
         chart.draw_series(std::iter::once(PathElement::new(verts, RED)))?;
-    }
-
-    if let Some(rays) = rays {
-        for ray in rays {
-            chart.draw_series(std::iter::once(PathElement::new(
-                [ray.origin, at_max_plottable_radius(ray, &plot_dims)?],
-                BLACK,
-            )))?;
-        }
-
-        if plot_real_intersections {
-            for ray in rays {
-                for (_, module) in modules {
-                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
-                        chart.plotting_area().draw(&plotters::element::Circle::new(
-                            pos,
-                            3,
-                            GREEN.filled(),
-                        ))?;
-                    }
-                }
-            }
-        }
     }
 
     if let Some(hits) = hits {
@@ -164,8 +102,6 @@ pub fn plot_2d_xy(
     filename: &str,
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<StraightRay>>,
-    plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
@@ -188,35 +124,6 @@ pub fn plot_2d_xy(
         // verts.push(verts[0]);
 
         chart.draw_series(std::iter::once(PathElement::new(verts, RED)))?;
-    }
-
-    if let Some(rays) = rays {
-        for ray in rays {
-            chart.draw_series(std::iter::once(PathElement::new(
-                [
-                    (ray.origin.0, ray.origin.1),
-                    (
-                        at_max_plottable_radius(ray, &plot_dims)?.0,
-                        at_max_plottable_radius(ray, &plot_dims)?.1,
-                    ),
-                ],
-                BLACK,
-            )))?;
-        }
-
-        if plot_real_intersections {
-            for ray in rays {
-                for (_, module) in modules {
-                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
-                        chart.plotting_area().draw(&plotters::element::Circle::new(
-                            (pos.0, pos.1),
-                            3,
-                            GREEN.filled(),
-                        ))?;
-                    }
-                }
-            }
-        }
     }
 
     if let Some(hits) = hits {
@@ -282,8 +189,6 @@ pub fn plot_2d_xz(
     filename: &str,
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<StraightRay>>,
-    plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
@@ -306,35 +211,6 @@ pub fn plot_2d_xz(
         // verts.push(verts[0]);
 
         chart.draw_series(std::iter::once(PathElement::new(verts, RED)))?;
-    }
-
-    if let Some(rays) = rays {
-        for ray in rays {
-            chart.draw_series(std::iter::once(PathElement::new(
-                [
-                    (ray.origin.0, ray.origin.2),
-                    (
-                        at_max_plottable_radius(ray, &plot_dims)?.0,
-                        at_max_plottable_radius(ray, &plot_dims)?.2,
-                    ),
-                ],
-                BLACK,
-            )))?;
-        }
-
-        if plot_real_intersections {
-            for ray in rays {
-                for (_, module) in modules {
-                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
-                        chart.plotting_area().draw(&plotters::element::Circle::new(
-                            (pos.0, pos.2),
-                            3,
-                            GREEN.filled(),
-                        ))?;
-                    }
-                }
-            }
-        }
     }
 
     if let Some(hits) = hits {
@@ -400,8 +276,6 @@ pub fn plot_2d_yz(
     filename: &str,
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<StraightRay>>,
-    plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
@@ -424,35 +298,6 @@ pub fn plot_2d_yz(
         // verts.push(verts[0]);
 
         chart.draw_series(std::iter::once(PathElement::new(verts, RED)))?;
-    }
-
-    if let Some(rays) = rays {
-        for ray in rays {
-            chart.draw_series(std::iter::once(PathElement::new(
-                [
-                    (ray.origin.1, ray.origin.2),
-                    (
-                        at_max_plottable_radius(ray, &plot_dims)?.1,
-                        at_max_plottable_radius(ray, &plot_dims)?.2,
-                    ),
-                ],
-                BLACK,
-            )))?;
-        }
-
-        if plot_real_intersections {
-            for ray in rays {
-                for (_, module) in modules {
-                    if let Some((pos, _)) = ray.intersect(module, std::f64::MAX) {
-                        chart.plotting_area().draw(&plotters::element::Circle::new(
-                            (pos.1, pos.2),
-                            3,
-                            GREEN.filled(),
-                        ))?;
-                    }
-                }
-            }
-        }
     }
 
     if let Some(hits) = hits {
@@ -518,8 +363,6 @@ pub fn plot_all(
     file_dir: &str,
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
-    rays: Option<&Vec<StraightRay>>,
-    plot_real_intersections: bool,
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<Vector3<f64>>>,
     particles: Option<Vec<Particle>>,
@@ -549,8 +392,6 @@ pub fn plot_all(
         &filename_3d,
         plot_dims,
         modules,
-        rays,
-        plot_real_intersections,
         hits,
         clustered_points,
         None,
@@ -560,8 +401,6 @@ pub fn plot_all(
         &filename_2d_xy,
         plot_dims,
         modules,
-        rays,
-        plot_real_intersections,
         hits,
         clustered_points,
         None,
@@ -571,8 +410,6 @@ pub fn plot_all(
         &filename_2d_xz,
         plot_dims,
         modules,
-        rays,
-        plot_real_intersections,
         hits,
         clustered_points,
         None,
@@ -582,8 +419,6 @@ pub fn plot_all(
         &filename_2d_yz,
         plot_dims,
         modules,
-        rays,
-        plot_real_intersections,
         hits,
         clustered_points,
         None,
