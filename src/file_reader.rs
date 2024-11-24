@@ -1,6 +1,8 @@
 use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
+use crate::event_generator::StraightRay;
 use crate::matrix::{Matrix3, Vector3};
+use crate::particle::Particle;
 use std::collections::HashMap;
 use std::fs;
 
@@ -57,6 +59,36 @@ pub fn read_hits(filename: &str) -> Result<Vec<Hit>, Box<dyn std::error::Error>>
         let module_id = line_vec[0].parse()?;
         let pos = (line_vec[1].parse()?, line_vec[2].parse()?);
         result.push(Hit { module_id, pos });
+    }
+    Ok(result)
+}
+
+pub fn read_particles(filename: &str) -> Result<Vec<Particle>, Box<dyn std::error::Error>> {
+    let mut result = Vec::new();
+    for line in fs::read_to_string(filename)?.lines() {
+        let line_vec: Vec<_> = line.split_whitespace().collect();
+        if line_vec.len() < 8 {
+            let err: Box<dyn std::error::Error> = format!(
+                "Failure to read file: {}. Line {} did not have enough parameters.",
+                filename, line
+            )
+            .into();
+            return Err(err);
+        }
+        result.push(Particle::new(
+            line_vec[0].parse()?,
+            line_vec[1].parse()?,
+            line_vec[2].parse()?,
+            StraightRay::new(
+                line_vec[3].parse()?,
+                line_vec[4].parse()?,
+                (
+                    line_vec[5].parse()?,
+                    line_vec[6].parse()?,
+                    line_vec[7].parse()?,
+                ),
+            ),
+        )?)
     }
     Ok(result)
 }

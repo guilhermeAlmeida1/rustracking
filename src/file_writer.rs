@@ -2,6 +2,7 @@ use std::fs;
 use std::io::Write;
 
 use crate::clustering::Hit;
+use crate::particle::Particle;
 
 const XCONST: (f64, f64, f64) = (0.0, -90.0, 0.0);
 const YCONST: (f64, f64, f64) = (90.0, 0.0, 0.0);
@@ -52,6 +53,27 @@ pub fn write_hits(filename: &str, hits: &Vec<Hit>) -> Result<(), Box<dyn std::er
         file.write_fmt(format_args!(
             "{} {} {}\n",
             hit.module_id, hit.pos.0, hit.pos.1,
+        ))?;
+    }
+    Ok(())
+}
+
+pub fn write_particles(
+    filename: &str,
+    particles: &Vec<Particle>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut file = fs::File::create(filename)?;
+    for particle in particles {
+        file.write_fmt(format_args!(
+            "{} {} {} {} {} {} {} {}\n",
+            particle.charge,
+            particle.rest_mass,
+            particle.energy,
+            particle.ray.theta,
+            particle.ray.phi,
+            particle.ray.origin.0,
+            particle.ray.origin.1,
+            particle.ray.origin.2,
         ))?;
     }
     Ok(())

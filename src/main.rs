@@ -12,8 +12,8 @@ mod plotting;
 mod utils;
 
 const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";
-const RAYS_FILE_NAME: &str = "data/randomHits/rays.txt";
-const HITS_FILE_NAME: &str = "data/randomHits/hits.txt";
+const PARTICLES_FILE_NAME: &str = "data/magfield/particles.txt";
+const HITS_FILE_NAME: &str = "data/magfield/hits.txt";
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // let layers = vec![2.5, 3., 3.5, 4., 4.5, 5., 6.25, 7.5, 10., 12.5, 17.5];
@@ -28,23 +28,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let modules = file_reader::read_modules(DETECTOR_FILE_NAME)?;
 
-    let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(5000., 2500.));
-    let (particles, hits) =
-        event_generator::generate_random_event(30000., crate::particle::PROTON_REST_MASS, dist, &modules, &plot_dims)?;
+    // let dist = event_generator::Distributions::Gauss(event_generator::Gauss::new(5000., 2500.));
+    // let particles = event_generator::generate_random_particles(30000., crate::particle::PROTON_REST_MASS, dist)?;
+    // let hits = event_generator::create_hits(particles.clone(), &modules, &plot_dims);
 
-    // file_writer::write_rays(RAYS_FILE_NAME, &rays)?;
+    // file_writer::write_particles(PARTICLES_FILE_NAME, &particles)?;
     // file_writer::write_hits(HITS_FILE_NAME, &hits)?;
 
-    // let rays = file_reader::read_rays(RAYS_FILE_NAME)?;
-    // let hits = file_reader::read_hits(HITS_FILE_NAME)?;
-
-    // // let rays = vec![event_generator::StraightRay {
-    // //     theta: 0.,
-    // //     phi: 0.,
-    // //     origin: (0., 0., 0.),
-    // //     energy: 15.,
-    // // }];
-    // // let hits = event_generator::create_hits(&rays, &modules);
+    let particles = file_reader::read_particles(PARTICLES_FILE_NAME)?;
+    let hits = file_reader::read_hits(HITS_FILE_NAME)?;
 
     let points = clustering::clustering(&modules, &hits)?;
 
