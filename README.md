@@ -32,4 +32,4 @@ A _very cool_ block of code, where I decided to process the output of the CCL al
 
 Magnetic field integration into event generator:
 
-<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/87b12a0fb1d7a16f6c6ebe02da48e303a0a6dfe7/data/magfield/3d.svg" width="560" />
+<img src="https://github.com/guilhermeAlmeida1/rustracking/blob/41a8b9e7376bd2b36e3274e86efe224fe7a6a149/data/magfield/3d.svg" width="560" />
