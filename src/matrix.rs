@@ -50,51 +50,95 @@ impl<T: Good<T>> Vector3<T> {
         }
     }
 
-    pub fn new(x: T, y: T, z: T) -> Self {
+    pub const fn new(x: T, y: T, z: T) -> Self {
         Self { data: [x, y, z] }
+    }
+
+    // cross product between two vectors in cartesian coordinates
+    pub fn cross_cartesian(&self, other: Self) -> Self {
+        Self::new(
+            self[1] * other[2] - other[1] * self[2],
+            self[2] * other[0] - other[2] * self[0],
+            self[0] * other[1] - other[0] * self[1],
+        )
+    }
+
+    pub fn map<F: Fn(T) -> T>(self, f: F) -> Self {
+        Self::new(f(self[0]), f(self[1]), f(self[2]))
     }
 }
 
 impl Vector3<f64> {
-    pub fn distance(&self, other: &Vector3<f64>) -> f64 {
-        f64::sqrt(
-            self.data
-                .iter()
-                .zip(other.data.iter())
-                .map(|(a, b)| (a - b) * (a - b))
-                .sum(),
+    // transforms from spherical to cartesian coordinates
+    pub fn to_cartesian(self) -> Self {
+        Self::new(
+            self[0] * self[1].sin() * self[2].cos(),
+            self[0] * self[1].sin() * self[2].sin(),
+            self[0] * self[1].cos(),
         )
+    }
+
+    // transforms from cartesian to spherical coordinates
+    pub fn to_spherical(self) -> Self {
+        let r = f64::sqrt(self.map(|v| v.powi(2)).into_iter().sum());
+        if (r - 0.).abs() < f64::EPSILON {
+            return Self::default();
+        }
+        let x = self[0];
+        let y = self[1];
+        let z = self[2];
+
+        let theta = if z == 0. {
+            std::f64::consts::FRAC_PI_2
+        } else if z < 0. {
+            (x.powi(2) + y.powi(2)) / z
+        } else {
+            (x.powi(2) + y.powi(2)) / z + std::f64::consts::PI
+        };
+
+        let phi = if x == 0. {
+            if y >= 0. {
+                std::f64::consts::FRAC_PI_2
+            } else {
+                -std::f64::consts::FRAC_PI_2
+            }
+        } else if x > 0. {
+            (y / x).atan()
+        } else {
+            if y >= 0. {
+                (y / x).atan() + std::f64::consts::PI
+            } else {
+                (y / x).atan() - std::f64::consts::PI
+            }
+        };
+        Self::new(r, theta, phi)
     }
 }
 
 impl<T: Good<T>> ops::Add<Vector3<T>> for Vector3<T> {
-    type Output = Vector3<T>;
-    fn add(self, rhs: Vector3<T>) -> Self::Output {
-        let mut out: Self::Output = Default::default();
+    type Output = Self;
+    fn add(mut self, rhs: Self) -> Self::Output {
         for i in 0..3 {
-            out[i] = self[i] + rhs[i];
+            self[i] += rhs[i];
         }
-        out
+        self
     }
 }
 
 impl<T: Good<T>> ops::Sub<Vector3<T>> for Vector3<T> {
-    type Output = Vector3<T>;
-    fn sub(self, rhs: Vector3<T>) -> Self::Output {
-        let mut out: Self::Output = Default::default();
+    type Output = Self;
+    fn sub(mut self, rhs: Self) -> Self::Output {
         for i in 0..3 {
-            out[i] = self[i] - rhs[i];
+            self[i] -= rhs[i];
         }
-        out
+        self
     }
 }
 
 impl<T: Good<T>> ops::Mul<T> for Vector3<T> {
-    type Output = Vector3<T>;
+    type Output = Self;
     fn mul(self, rhs: T) -> Self::Output {
-        Self::Output {
-            data: [self[0] * rhs, self[1] * rhs, self[2] * rhs],
-        }
+        self.map(|it| it * rhs)
     }
 }
 
@@ -110,6 +154,15 @@ impl<T: Good<T>, I: SliceIndex<[T]>> ops::IndexMut<I> for Vector3<T> {
     #[inline]
     fn index_mut(&mut self, index: I) -> &mut Self::Output {
         std::ops::IndexMut::index_mut(&mut self.data, index)
+    }
+}
+
+impl<T: Good<T>> IntoIterator for Vector3<T> {
+    type Item = T;
+    type IntoIter = std::array::IntoIter<T, 3>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.into_iter()
     }
 }
 
@@ -400,6 +453,7 @@ impl<T: Good<T>> IntoMatrix3<T> for Vec<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::assert_near;
 
     #[test]
     fn matrix_identity() {
@@ -411,6 +465,45 @@ mod tests {
     fn vector_identity() {
         let a = Vector3::<i64>::identity();
         assert_eq!(a.data, [1, 1, 1]);
+    }
+
+    #[test]
+    fn vector_map() {
+        let a = Vector3::new(1, 2, 3).map(|it| it * it);
+        assert_eq!(a.data, [1, 4, 9]);
+    }
+
+    #[test]
+    fn vector_add() {
+        let a = Vector3::<i64>::identity();
+        let b = Vector3::new(1, 2, 3);
+        assert_eq!((a + b).data, [2, 3, 4]);
+    }
+
+    #[test]
+    fn vector_subtract() {
+        let a = Vector3::<i64>::identity();
+        let b = Vector3::new(1, 2, 3);
+        assert_eq!((a - b).data, [0, -1, -2]);
+    }
+
+    #[test]
+    fn to_spherical() {
+        let cartesian = Vector3::new(f64::sqrt(2.) / 2., f64::sqrt(2.) / 2., 0.);
+        let result = cartesian.to_spherical();
+        let expected = [1., std::f64::consts::FRAC_PI_2, std::f64::consts::FRAC_PI_4];
+        for i in 0..3 {
+            assert_near(result[i], expected[i], 10. * f64::EPSILON);
+        }
+    }
+
+    #[test]
+    fn cross_cartesian() {
+        let result = Vector3::new(1., 0., 0.).cross_cartesian(Vector3::new(1., 2., 4.));
+        let expected = [0., -4., 2.];
+        for i in 0..3 {
+            assert_near(result[i], expected[i], 10. * f64::EPSILON);
+        }
     }
 
     #[test]
@@ -574,13 +667,5 @@ mod tests {
             assert!((b.data[i] - expected_b[i]).abs() < std::f64::EPSILON);
             assert!((c.data[i] - expected_c[i]).abs() < std::f64::EPSILON);
         }
-    }
-
-    #[test]
-    fn vec3f64_distance() {
-        let a = Vector3::new(1., 2., 5.);
-        let b = Vector3::new(4., 2., 1.);
-        println!("distance = {}", a.distance(&b));
-        assert!((a.distance(&b) - 5.).abs() < std::f64::EPSILON);
     }
 }
