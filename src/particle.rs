@@ -1,20 +1,11 @@
+use crate::config::{
+    CONST_MAGNETIC_FIELD, ELECTRON_CHARGE, ELECTRON_REST_MASS, ENERGY_LOSS_PER_SECOND,
+    PROTON_CHARGE, PROTON_REST_MASS, SPEED_OF_LIGHT, STEP_TIME,
+};
 use crate::detector_module::{DetectorModule, PixelPosition};
 use crate::event_generator::StraightRay;
-use crate::field::{ConstantField, Field};
+use crate::field::Field;
 use crate::matrix::Vector3;
-
-pub const STEP_TIME: f64 = 1e-10; // in s
-
-const ELECTRON_CHARGE: f64 = -1.; // in q_e
-const ELECTRON_REST_MASS: f64 = 0.5110; // in MeV/c^2
-
-const PROTON_CHARGE: f64 = -ELECTRON_CHARGE; // in q_e
-pub const PROTON_REST_MASS: f64 = 938.8; // in MeV/c^2
-
-pub const SPEED_OF_LIGHT: f64 = 299792458.; // in unit distance/s
-pub const ENERGY_LOSS_PER_SECOND: f64 = 1e11; // in MeV/s
-
-pub const CONST_MAGNETIC_FIELD: ConstantField = ConstantField::new(5e7, 0., 0.); // in TBD units
 
 #[derive(Clone, Copy, Debug)]
 pub struct Particle {

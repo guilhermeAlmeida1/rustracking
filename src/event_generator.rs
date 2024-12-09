@@ -4,6 +4,7 @@
 // create hits with a random spread
 
 use crate::clustering::Hit;
+use crate::config::ENERGY_HIT_FACTOR;
 use crate::detector_module::{DetectorModule, PixelPosition};
 use crate::matrix::Vector3;
 use crate::particle::Particle;
@@ -12,9 +13,6 @@ use rand::distributions::Distribution;
 use rand::Rng;
 use std::collections::HashMap;
 use std::f64::consts::PI;
-
-pub const ENERGY_LOSS_PER_UNIT_DISTANCE: f64 = 1.; // in MeV / unit distance
-const ENERGY_HIT_FACTOR: f64 = 700.; // in MeV
 
 #[derive(Clone, Copy, Debug)]
 pub struct StraightRay {
