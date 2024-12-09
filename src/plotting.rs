@@ -1,6 +1,5 @@
-use crate::clustering::Hit;
+use crate::clustering::{Hit, SpacePoint};
 use crate::detector_module::DetectorModule;
-use crate::matrix::Vector3;
 use plotters::prelude::*;
 
 use crate::particle::*;
@@ -18,7 +17,7 @@ pub fn plot_3d(
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     hits: Option<&Vec<Hit>>,
-    clustered_points: Option<&Vec<Vector3<f64>>>,
+    clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
     particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -60,7 +59,7 @@ pub fn plot_3d(
     if let Some(points) = clustered_points {
         for point in points {
             chart.plotting_area().draw(&plotters::element::Circle::new(
-                (point.data[0], point.data[1], point.data[2]),
+                (point.0[0], point.0[1], point.0[2]),
                 3,
                 BLACK.filled(),
             ))?;
@@ -111,7 +110,7 @@ pub fn plot_2d_xy(
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     hits: Option<&Vec<Hit>>,
-    clustered_points: Option<&Vec<Vector3<f64>>>,
+    clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
     particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -149,7 +148,7 @@ pub fn plot_2d_xy(
     if let Some(points) = clustered_points {
         for point in points {
             chart.plotting_area().draw(&plotters::element::Circle::new(
-                (point.data[0], point.data[1]),
+                (point.0[0], point.0[1]),
                 3,
                 BLACK.filled(),
             ))?;
@@ -198,7 +197,7 @@ pub fn plot_2d_xz(
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     hits: Option<&Vec<Hit>>,
-    clustered_points: Option<&Vec<Vector3<f64>>>,
+    clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
     particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -236,7 +235,7 @@ pub fn plot_2d_xz(
     if let Some(points) = clustered_points {
         for point in points {
             chart.plotting_area().draw(&plotters::element::Circle::new(
-                (point.data[0], point.data[2]),
+                (point.0[0], point.0[2]),
                 3,
                 BLACK.filled(),
             ))?;
@@ -285,7 +284,7 @@ pub fn plot_2d_yz(
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     hits: Option<&Vec<Hit>>,
-    clustered_points: Option<&Vec<Vector3<f64>>>,
+    clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
     particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -323,7 +322,7 @@ pub fn plot_2d_yz(
     if let Some(points) = clustered_points {
         for point in points {
             chart.plotting_area().draw(&plotters::element::Circle::new(
-                (point.data[1], point.data[2]),
+                (point.0[1], point.0[2]),
                 3,
                 BLACK.filled(),
             ))?;
@@ -372,7 +371,7 @@ pub fn plot_all(
     plot_dims: &Boundary,
     modules: &HashMap<u64, DetectorModule>,
     hits: Option<&Vec<Hit>>,
-    clustered_points: Option<&Vec<Vector3<f64>>>,
+    clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename_3d = file_dir.to_string() + "/3d.svg";

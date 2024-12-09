@@ -450,6 +450,12 @@ impl<T: Good<T>> IntoMatrix3<T> for Vec<T> {
     }
 }
 
+impl Into<crate::clustering::SpacePoint> for Vector3<f64> {
+    fn into(self) -> crate::clustering::SpacePoint {
+        crate::clustering::SpacePoint::new(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

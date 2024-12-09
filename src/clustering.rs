@@ -76,14 +76,30 @@ fn ccl(hits: &Vec<Hit>) -> Vec<usize> {
     indices
 }
 
+#[derive(Debug, PartialEq)]
+pub struct SpacePoint(pub Vector3<f64>);
+impl SpacePoint {
+    #[inline]
+    pub fn new(data: Vector3<f64>) -> Self {
+        Self { 0: data }
+    }
+}
+
+impl Into<Vector3<f64>> for crate::clustering::SpacePoint {
+    #[inline]
+    fn into(self) -> Vector3<f64> {
+        self.0
+    }
+}
+
 pub fn clustering(
     modules: &HashMap<u64, DetectorModule>,
     hits: &Vec<Hit>,
-) -> Result<Vec<Vector3<f64>>, &'static str> {
+) -> Result<Vec<SpacePoint>, &'static str> {
     let ccl = ccl(hits);
 
     // possibly the most hideously beautiful code I've created
-    let result: Vec<Vector3<f64>> = ccl
+    let result: Vec<SpacePoint> = ccl
         .iter()
         .enumerate()
         .filter(|(i, &val)| *i == val)
@@ -102,6 +118,7 @@ pub fn clustering(
                     agg.1 .1 as f64 / agg.2 + 0.5,
                 ))
                 .unwrap()
+                .into()
         })
         .collect();
 
@@ -176,14 +193,14 @@ mod tests {
             Hit::new(0, (5, 5)),
             Hit::new(1, (5, 5)),
         ];
-        let result: Vec<Vector3<f64>> = clustering(&modules, &hits).unwrap();
+        let result: Vec<SpacePoint> = clustering(&modules, &hits).unwrap();
 
         let expected = [[5., 5., 0.], [0.5, 0.5, 0.], [-10., 2., 14.]];
 
         println!("{:?}", result);
         for i in 0..result.len() {
             for j in 0..3 {
-                assert!((result[i][j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
+                assert!((result[i].0[j] - expected[i][j]).abs() <= 10. * std::f64::EPSILON);
             }
         }
     }
