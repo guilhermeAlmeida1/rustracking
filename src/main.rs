@@ -10,6 +10,7 @@ mod file_writer;
 mod matrix;
 mod particle;
 mod plotting;
+mod seeding;
 mod utils;
 
 const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";

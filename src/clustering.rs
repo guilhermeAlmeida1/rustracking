@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::config::{SEEDING_DELTA_PHI, SEEDING_DELTA_R, SEEDING_DELTA_THETA};
 use crate::{detector_module::*, matrix::Vector3};
 
 #[derive(Debug, PartialEq)]
@@ -76,12 +77,22 @@ fn ccl(hits: &Vec<Hit>) -> Vec<usize> {
     indices
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SpacePoint(pub Vector3<f64>);
 impl SpacePoint {
     #[inline]
     pub fn new(data: Vector3<f64>) -> Self {
         Self { 0: data }
+    }
+
+    pub fn is_compatible(&self, other: &SpacePoint) -> bool {
+        let self_spher = self.0.to_spherical();
+        let other_spher = other.0.to_spherical();
+        let delta_spher = (other_spher - self_spher).map(|v| v.abs());
+
+        return delta_spher[0] < SEEDING_DELTA_R
+            && delta_spher[1] < SEEDING_DELTA_THETA
+            && delta_spher[2] < SEEDING_DELTA_PHI;
     }
 }
 
