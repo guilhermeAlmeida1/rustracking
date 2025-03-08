@@ -1,8 +1,9 @@
-use crate::clustering::{Hit, SpacePoint};
+use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
-use plotters::prelude::*;
-
 use crate::particle::*;
+use crate::spacepoint::SpacePoint;
+
+use plotters::prelude::*;
 
 use std::collections::HashMap;
 

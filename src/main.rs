@@ -11,6 +11,7 @@ mod matrix;
 mod particle;
 mod plotting;
 mod seeding;
+mod spacepoint;
 mod utils;
 
 const DETECTOR_FILE_NAME: &str = "data/boxDetector.txt";

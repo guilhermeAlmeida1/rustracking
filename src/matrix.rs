@@ -450,10 +450,10 @@ impl<T: Good<T>> IntoMatrix3<T> for Vec<T> {
     }
 }
 
-impl Into<crate::clustering::SpacePoint> for Vector3<f64> {
+impl Into<crate::spacepoint::SpacePoint> for Vector3<f64> {
     #[inline]
-    fn into(self) -> crate::clustering::SpacePoint {
-        crate::clustering::SpacePoint::new(self)
+    fn into(self) -> crate::spacepoint::SpacePoint {
+        crate::spacepoint::SpacePoint::new(self)
     }
 }
 

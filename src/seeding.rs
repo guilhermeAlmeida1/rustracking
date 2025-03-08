@@ -1,4 +1,4 @@
-use crate::clustering::SpacePoint;
+use crate::spacepoint::SpacePoint;
 
 #[derive(Debug, PartialEq)]
 struct Doublet<'a>(pub &'a SpacePoint, pub &'a SpacePoint);
@@ -28,7 +28,6 @@ mod test {
     use super::*;
     use crate::matrix::Vector3;
 
-    #[inline]
     fn new_sp(x: f64, y: f64, z: f64) -> SpacePoint {
         Vector3::new(x, y, z).into()
     }

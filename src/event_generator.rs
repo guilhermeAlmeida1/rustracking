@@ -287,7 +287,7 @@ mod test {
     #[ignore]
     fn gauss_distribution() {
         const TOLERANCE: f64 = 0.01;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mean = 3.7;
         let sigma = 2.5;
         let dist = Gauss { mean, sigma };
@@ -319,7 +319,7 @@ mod test {
     #[ignore]
     fn exponential_distribution() {
         const TOLERANCE: f64 = 0.01;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let lambda = 3.7;
         let dist = Exponential { lambda };
         let mean_expected = 1. / lambda;
