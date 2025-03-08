@@ -14,7 +14,8 @@ impl SpacePoint {
         let other_spher = other.0.to_spherical();
         let delta_spher = (other_spher - self_spher).map(|v| v.abs());
 
-        return delta_spher[0] < SEEDING_DELTA_R
+        return delta_spher[0] >= 0.
+            && delta_spher[0] < SEEDING_DELTA_R
             && (delta_spher[1] < SEEDING_DELTA_THETA
                 || delta_spher[1] > std::f64::consts::PI - SEEDING_DELTA_THETA)
             && (delta_spher[2] < SEEDING_DELTA_PHI
