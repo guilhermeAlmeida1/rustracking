@@ -9,7 +9,7 @@ use crate::detector_module::{DetectorModule, PixelPosition};
 use crate::matrix::Vector3;
 use crate::particle::Particle;
 use crate::plotting::Boundary;
-use rand::distributions::Distribution;
+use rand::distr::Distribution;
 use rand::Rng;
 use std::collections::HashMap;
 use std::f64::consts::PI;
@@ -125,7 +125,7 @@ impl StraightRay {
 }
 
 pub enum Distributions {
-    Uniform(rand::distributions::Uniform<f64>),
+    Uniform(rand::distr::Uniform<f64>),
     Gauss(Gauss),
     // Poisson(f64),
     Exponential(Exponential),
@@ -148,7 +148,7 @@ pub struct Gauss {
 }
 impl Distribution<f64> for Gauss {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
-        let r: [f64; 12] = rng.gen();
+        let r: [f64; 12] = rng.random();
         let result = r.iter().sum::<f64>() - 6.;
         let result = result * self.sigma + self.mean;
         result
@@ -171,7 +171,7 @@ impl Distribution<f64> for Exponential {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> f64 {
         // Apply the inverse commulative distribution function
         // to a random number between 0 and 1
-        let r: f64 = rng.gen();
+        let r: f64 = rng.random();
         -f64::ln(1. - r) / self.lambda
     }
 }
@@ -180,11 +180,11 @@ pub fn generate_random_particles(
     total_energy: f64,
     min_energy: f64,
     dist: Distributions,
-) -> Result<Vec<Particle>, &'static str> {
+) -> Result<Vec<Particle>, Box<dyn std::error::Error>> {
     let mut result = Vec::new();
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
-    let angle_dist = rand::distributions::Uniform::new(-PI, PI);
+    let angle_dist = rand::distr::Uniform::new(-PI, PI)?;
     let origin_dist = Gauss::new(0., 0.1);
 
     let mut current_energy = 0.;
@@ -222,7 +222,7 @@ pub fn create_hits(
         mean: 0.,
         sigma: 0.15,
     };
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     let mut hits = Vec::new();
     for particle in &mut particles {
@@ -272,7 +272,7 @@ pub fn generate_random_event(
     dist: Distributions,
     modules: &HashMap<u64, DetectorModule>,
     bounds: &Boundary,
-) -> Result<(Vec<Particle>, Vec<Hit>), &'static str> {
+) -> Result<(Vec<Particle>, Vec<Hit>), Box<dyn std::error::Error>> {
     let particles = generate_random_particles(total_energy, min_energy, dist)?;
     let hits = create_hits(particles.clone(), modules, bounds);
     Ok((particles, hits))
