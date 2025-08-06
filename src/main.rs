@@ -43,6 +43,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let points = clustering::clustering(&modules, &hits)?;
 
+    let doublets = seeding::find_doublets(&points);
+
     plotting::plot_all(
         "data/magfield",
         &plot_dims,
@@ -50,6 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
         Some(&points),
         Some(particles.clone()),
+        Some(&doublets),
     )?;
 
     Ok(())

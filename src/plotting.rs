@@ -1,6 +1,7 @@
 use crate::clustering::Hit;
 use crate::detector_module::DetectorModule;
 use crate::particle::*;
+use crate::seeding::Doublet;
 use crate::spacepoint::SpacePoint;
 
 use plotters::prelude::*;
@@ -21,6 +22,7 @@ pub fn plot_3d(
     clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
     particles_as_points: Option<&Vec<Vec<(f64, f64, f64)>>>,
+    doublets: Option<&Vec<Doublet>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let root = SVGBackend::new(filename, (1920, 1080)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -35,11 +37,7 @@ pub fn plot_3d(
 
     for (_, module) in modules {
         #[allow(unused_mut)]
-        let mut verts: Vec<_> = module
-            .vertices()
-            .iter()
-            .map(|&it| (it.data[0], it.data[1], it.data[2]))
-            .collect();
+        let mut verts: Vec<_> = module.vertices().iter().map(|&it| it.data.into()).collect();
         // verts.push(verts[0]);
 
         chart.draw_series(std::iter::once(PathElement::new(verts, RED)))?;
@@ -50,7 +48,7 @@ pub fn plot_3d(
             let mut verts: Vec<_> = (&modules)[&hit.module_id]
                 .pixel_vertices(hit.pos)?
                 .iter()
-                .map(|&it| (it.data[0], it.data[1], it.data[2]))
+                .map(|&it| it.data.into())
                 .collect();
             verts.push(verts[0]);
             chart.draw_series(std::iter::once(PathElement::new(verts, BLUE)))?;
@@ -60,7 +58,7 @@ pub fn plot_3d(
     if let Some(points) = clustered_points {
         for point in points {
             chart.plotting_area().draw(&plotters::element::Circle::new(
-                (point.0[0], point.0[1], point.0[2]),
+                point.0.into(),
                 3,
                 BLACK.filled(),
             ))?;
@@ -69,21 +67,13 @@ pub fn plot_3d(
 
     if let Some(mut particles) = particles {
         for particle in &mut particles {
-            let mut points = vec![(
-                particle.ray.origin[0],
-                particle.ray.origin[1],
-                particle.ray.origin[2],
-            )];
+            let mut points = vec![particle.ray.origin.into()];
             for _ in 0.. {
                 if particle.energy - particle.rest_mass < 0. {
                     break;
                 }
                 particle.do_step();
-                points.push((
-                    particle.ray.origin[0],
-                    particle.ray.origin[1],
-                    particle.ray.origin[2],
-                ));
+                points.push(particle.ray.origin.into());
             }
             chart
                 .draw_series(std::iter::once(PathElement::new(points, BLUE)))
@@ -96,6 +86,15 @@ pub fn plot_3d(
             chart
                 .draw_series(std::iter::once(PathElement::new(points_vec.clone(), BLUE)))
                 .unwrap();
+        }
+    }
+
+    if let Some(doublets) = doublets {
+        for doublet in doublets {
+            chart.draw_series(std::iter::once(PathElement::new(
+                [doublet.0 .0.data.into(), doublet.1 .0.data.into()],
+                RED,
+            )))?;
         }
     }
 
@@ -374,6 +373,7 @@ pub fn plot_all(
     hits: Option<&Vec<Hit>>,
     clustered_points: Option<&Vec<SpacePoint>>,
     particles: Option<Vec<Particle>>,
+    doublets: Option<&Vec<Doublet>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let filename_3d = file_dir.to_string() + "/3d.svg";
     let filename_2d_xy = file_dir.to_string() + "/2d_xy.svg";
@@ -412,6 +412,7 @@ pub fn plot_all(
         clustered_points,
         None,
         Some(&particles_as_points),
+        doublets,
     )?;
     plot_2d_xy(
         &filename_2d_xy,
