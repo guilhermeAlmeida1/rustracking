@@ -66,6 +66,11 @@ impl<T: Good<T>> Vector3<T> {
     pub fn map<F: Fn(T) -> T>(self, f: F) -> Self {
         Self::new(f(self[0]), f(self[1]), f(self[2]))
     }
+
+    #[inline]
+    pub fn norm_sq(self) -> T {
+        self.data[0] * self.data[0] + self.data[1] * self.data[1] + self.data[2] * self.data[2]
+    }
 }
 
 impl Vector3<f64> {
@@ -163,6 +168,12 @@ impl<T: Good<T>> IntoIterator for Vector3<T> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.data.into_iter()
+    }
+}
+
+impl<T: Good<T>> Into<(T, T, T)> for Vector3<T> {
+    fn into(self) -> (T, T, T) {
+        (self.data[0], self.data[1], self.data[2])
     }
 }
 
@@ -450,13 +461,6 @@ impl<T: Good<T>> IntoMatrix3<T> for Vec<T> {
     }
 }
 
-impl Into<crate::spacepoint::SpacePoint> for Vector3<f64> {
-    #[inline]
-    fn into(self) -> crate::spacepoint::SpacePoint {
-        crate::spacepoint::SpacePoint::new(self)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -478,6 +482,14 @@ mod tests {
     fn vector_map() {
         let a = Vector3::new(1, 2, 3).map(|it| it * it);
         assert_eq!(a.data, [1, 4, 9]);
+    }
+
+    #[test]
+    fn vector_absnorm_sq() {
+        let a = Vector3::<i64>::identity();
+        let b = Vector3::new(3., 2., 3.);
+        assert_eq!(a.norm_sq(), 3);
+        assert_near(b.norm_sq(), 22., 10. * f64::EPSILON);
     }
 
     #[test]

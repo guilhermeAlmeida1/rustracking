@@ -15,6 +15,6 @@ pub const CONST_MAGNETIC_FIELD: ConstantField = ConstantField::new(5e7, 0., 0.);
 
 pub const ENERGY_HIT_FACTOR: f64 = 700.; // in MeV
 
-pub const SEEDING_DELTA_R: f64 = 3.; // in unit distance
+pub const SEEDING_DELTA_R: f64 = 2.; // in unit distance
 pub const SEEDING_DELTA_THETA: f64 = 0.3; // in radian
 pub const SEEDING_DELTA_PHI: f64 = SEEDING_DELTA_THETA; // in unit distance

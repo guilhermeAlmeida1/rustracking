@@ -5,21 +5,30 @@ use crate::matrix::Vector3;
 pub struct SpacePoint(pub Vector3<f64>);
 impl SpacePoint {
     #[inline]
-    pub fn new(data: Vector3<f64>) -> Self {
-        Self { 0: data }
+    pub fn new(x: f64, y: f64, z: f64) -> Self {
+        Self {
+            0: Vector3::new(x, y, z),
+        }
     }
 
     pub fn is_compatible(&self, other: &SpacePoint) -> bool {
         let self_spher = self.0.to_spherical();
         let other_spher = other.0.to_spherical();
         let delta_spher = (other_spher - self_spher).map(|v| v.abs());
+        println!("{:?}", delta_spher);
 
-        return delta_spher[0] >= 0.
-            && delta_spher[0] < SEEDING_DELTA_R
+        return delta_spher[0] < SEEDING_DELTA_R
             && (delta_spher[1] < SEEDING_DELTA_THETA
                 || delta_spher[1] > std::f64::consts::PI - SEEDING_DELTA_THETA)
             && (delta_spher[2] < SEEDING_DELTA_PHI
                 || delta_spher[2] > std::f64::consts::PI - SEEDING_DELTA_PHI);
+    }
+}
+
+impl From<Vector3<f64>> for SpacePoint {
+    #[inline]
+    fn from(value: Vector3<f64>) -> Self {
+        Self { 0: value }
     }
 }
 
